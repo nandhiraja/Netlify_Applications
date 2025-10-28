@@ -2,10 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { X, Plus, Minus } from 'lucide-react';
 import './Styles/menuItemModal.css';
+import { useCart } from './CartContext';
 
 const TAX_RATE = 0.05; // 5% tax
 
 const MenuItemModal = ({ item, onClose, onAddToCart }) => {
+  const { addItem } = useCart();
+
   const [quantity, setQuantity] = useState(1);
   const [selectedCustomizations, setSelectedCustomizations] = useState({});
   const [selectedAddons, setSelectedAddons] = useState({});
@@ -113,6 +116,7 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
       timestamp: Date.now(),
     };
     onAddToCart(orderItem);
+    addItem(orderItem); 
     onClose();
   };
 
@@ -190,8 +194,9 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
                 {item.addons.map(addon => (
                   <label key={addon.id} className="addon-item">
                     <div className="addon-info">
-                      <span className="addon-name">{addon.name}</span>
-                      <span className="addon-price">+₹{addon.price.toFixed(2)}</span>
+                      <span className="addon-name">{addon.name}
+                      <span className="addon-price">.    +₹{addon.price.toFixed(2)}</span>
+                      </span>
                     </div>
                     <input
                       type="checkbox"

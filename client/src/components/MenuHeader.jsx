@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Home, ChevronDown, ChevronUp } from 'lucide-react';
+import CartPage from './CartPage'; // or import your CartPage if it is styled as a modal
 import './Styles/menuHeader.css';
 
 const categories = ["Indian", "Italian", "Chinese", "Desserts", "Beverages", "Indian", "Italian", "Chinese", "Desserts", "Beverages", "Indian", "Italian", "Chinese", "Desserts", "Beverages"];
@@ -7,6 +8,7 @@ const categories = ["Indian", "Italian", "Chinese", "Desserts", "Beverages", "In
 const MenuHeader = () => {
   const [activeCategory, setActiveCategory] = useState("Indian");
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showCart, setShowCart] = useState(false);    // <-- Add this state
 
   const handleCategoryClick = (category) => {
     setActiveCategory(category);
@@ -17,27 +19,18 @@ const MenuHeader = () => {
     setIsExpanded(!isExpanded);
   };
 
+  const handleCartClick = () => {
+    setShowCart(true);
+  };
+
+  const handleCartClose = () => {
+    setShowCart(false);
+  };
+
   return (
     <header className="menu-header">
       {/* Top Bar */}
-      <div className="header-top">
-        <div className="header-title-section">
-          <h1 className="menu-title">Menu</h1>
-          <p className="menu-subtitle">
-            <span className="subtitle-accent">~</span> Take Away
-          </p>
-        </div>
-        
-        {/* Utility Buttons */}
-        <div className="header-actions">
-          <button className="action-btn home-btn">
-            <Home size={18} />
-          </button>
-          <button className="action-btn cart-btn">
-            <ShoppingCart size={18} />
-          </button>
-        </div>
-      </div>
+     
 
       {/* Category Navigation */}
       <div className="category-container">
@@ -57,20 +50,22 @@ const MenuHeader = () => {
           <button className="expand-toggle-btn" onClick={toggleExpanded}>
             {isExpanded ? (
               <>
-                {/* <span>Show L</span> */}
                 <ChevronUp size={10} />
               </>
             ) : (
               <>
-                {/* <span>More Categories</span> */}
                 <ChevronDown size={10} />
               </>
             )}
           </button>
         )}
       </div>
-      
       <div className="header-divider"></div>
+
+      {/* Cart Modal/Page */}
+      {showCart && (
+        <CartPage onClose={handleCartClose} />
+      )}
     </header>
   );
 };

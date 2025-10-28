@@ -4,6 +4,10 @@
    ============================================ */
 
 /* Card Container */
+
+::-webkit-scrollbar {
+  width: 0px;
+}
 .menu-item-card {
   background-color: #ffffff;
   border-radius: 16px;

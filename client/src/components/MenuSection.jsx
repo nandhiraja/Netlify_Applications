@@ -5,7 +5,7 @@ import { menuItems } from '../Datas/metadatas';
 import  { useState } from 'react';
 import MenuItemModal from './MenuItemModal';
 import './Styles/menuSection.css';
-
+import  Navigation  from './NavigationBar';
 /**
  * The main component for the entire menu page.
  * It combines the header and the grid of menu item cards.
@@ -47,6 +47,8 @@ const MenuSection = () => {
     <div>
     <div className="menu-section-container">
       {/* The Header component with navigation tabs */}
+      <Navigation />
+
       <MenuHeader />
 
       {/* The Grid of Menu Items */}
