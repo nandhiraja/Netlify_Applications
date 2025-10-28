@@ -20,7 +20,7 @@ const HomePage = () => {
       <div className="hero-section">
         <div className="hero-overlay"></div>
         <div className="hero-content">
-          <h1 className="brand-name">NK Restaurant</h1>
+          <h1 className="brand-name">Namma Kudumba Restaurant</h1>
           <p className="tagline">Authentic Flavors, Memorable Experiences</p>
           <div className="accent-line"></div>
         </div>

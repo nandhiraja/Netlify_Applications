@@ -6,6 +6,9 @@ import  { useState } from 'react';
 import MenuItemModal from './MenuItemModal';
 import './Styles/MenuSection.css';
 import  Navigation  from './NavigationBar';
+
+
+
 /**
  * The main component for the entire menu page.
  * It combines the header and the grid of menu item cards.

@@ -3,9 +3,9 @@ import { ShoppingCart, Home, ChevronDown, ChevronUp } from 'lucide-react';
 import React, { useState } from 'react';
 import CartPage from './CartPage'; // or import your CartPage if it is styled as a modal
 import HomePage from './Home';
-import {Link} from "react-router-dom"
+import {Link, useNavigate } from "react-router-dom"
 const Navigation = ()=>{
-
+  const navigate = useNavigate();
   const [showHome, setShowHome] = useState(false);  
   const [showCart, setShowCart] = useState(false);    // <-- Add this state
 
@@ -20,6 +20,11 @@ const handleCartClick = () => {
     setShowCart(false);
   };
 
+  const handleBack = () => {
+    navigate('/'); // Go back to previous page
+  };
+
+
  return (
     <>
     <header className="menu-header">
@@ -32,7 +37,7 @@ const handleCartClick = () => {
         </div>
         {/* Utility Buttons */}
         <div className="header-actions">
-          <button className="action-btn home-btn" onClick ={handleHomeClick}>
+          <button className="action-btn home-btn" onClick ={handleBack}>
             <Home size={18} />
           </button>
           <button className="action-btn cart-btn" onClick={handleCartClick}>
@@ -47,9 +52,7 @@ const handleCartClick = () => {
       {showCart && (
         <CartPage onClose={handleCartClose} />
       )}
-      {
-        showHome && (<Link to={'/'}/>)  
-      }
+      
     </>
  )
 }

@@ -8,6 +8,7 @@
 
 ::-webkit-scrollbar {
   display: none;
+  width: 0px;
 }
 .modal-overlay {
   position: fixed;
@@ -58,7 +59,7 @@
 /* Modal Header */
 .modal-header {
   position: relative;
-  background: linear-gradient(135deg, #6b4e37 0%, #4a3728 100%);
+  background: linear-gradient(135deg, #c25d0b 0%, #b45106 100%);
   padding: 28px 32px;
   border-radius: 18px 18px 0 0;
   border-bottom: 3px solid #c9a961;
@@ -191,7 +192,7 @@
 }
 
 .option-btn.selected {
-  background: linear-gradient(135deg, #6b4e37 0%, #4a3728 100%);
+  background: linear-gradient(135deg, #cf6208 0%, #fc7610 100%);
   border-color: #6b4e37;
   color: #ffffff;
   box-shadow: 0 6px 16px rgba(74, 55, 40, 0.25);
@@ -404,13 +405,13 @@
 }
 
 .add-to-cart-btn {
-  background: linear-gradient(135deg, #6b4e37 0%, #4a3728 100%);
+  background: linear-gradient(135deg, #d14403 0%, #e70303 100%);
   color: #ffffff;
   box-shadow: 0 6px 16px rgba(74, 55, 40, 0.25);
 }
 
 .add-to-cart-btn:hover {
-  background: linear-gradient(135deg, #8a6749 0%, #5d4435 100%);
+  background: linear-gradient(135deg, #9e300f 0%, #c50606 100%);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(74, 55, 40, 0.35);
 }
