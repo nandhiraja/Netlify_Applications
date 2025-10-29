@@ -2,11 +2,15 @@ import React, { useState } from 'react';
 import { ShoppingCart, Home, ChevronDown, ChevronUp } from 'lucide-react';
 import CartPage from './CartPage'; // or import your CartPage if it is styled as a modal
 import './Styles/MenuHeader.css';
-
+import { useEffect } from 'react';
 const categories = ["Indian", "Italian", "Chinese", "Desserts", "Beverages", "Indian", "Italian", "Chinese", "Desserts", "Beverages", "Indian", "Italian", "Chinese", "Desserts", "Beverages"];
+
 
 const MenuHeader = () => {
   const [activeCategory, setActiveCategory] = useState("Indian");
+    const [category, setCategory] = useState([]);
+    const [MenuData, setData] = useState([]);
+
   const [isExpanded, setIsExpanded] = useState(false);
   const [showCart, setShowCart] = useState(false);    // <-- Add this state
 
@@ -26,6 +30,23 @@ const MenuHeader = () => {
   const handleCartClose = () => {
     setShowCart(false);
   };
+
+
+
+  // useEffect(()=>{
+  //   fetch("http://127.0.0:8000/categories").then((resposse)=>resposse.json())
+  //   .then((data)=>setCategory(data)).catch(()=>{console.error("Some error in category fetching..")})
+  // },[])
+
+  // console.log(category)
+  useEffect(() => {
+      fetch("http://127.0.0.1:8000/menu")
+        .then((response) => response.json())
+        .then((data) => setData(data.menuItems))
+        .catch((error) => console.error("Error fetching menu:", error));
+    }, []);
+
+    console.log((MenuData))
 
   return (
     <header className="menu-header">

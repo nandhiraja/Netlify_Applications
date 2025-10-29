@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { use } from 'react';
 import MenuHeader from './MenuHeader';
 import MenuItemCard from './MenuItemCard';
 import { menuItems } from '../Datas/metadatas';
@@ -6,7 +6,7 @@ import  { useState } from 'react';
 import MenuItemModal from './MenuItemModal';
 import './Styles/MenuSection.css';
 import  Navigation  from './NavigationBar';
-
+import { useEffect } from 'react';
 
 
 /**
@@ -16,6 +16,8 @@ import  Navigation  from './NavigationBar';
 const MenuSection = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedMenuItem, setSelectedMenuItem] = useState(null);
+    const [MenuData, setData] = useState([]);
+
   const [cart, setCart] = useState([]); // A simple state to store cart items
 
   // Function to open the modal with a specific item
@@ -40,9 +42,14 @@ const MenuSection = () => {
     console.log("Current Cart:", [...cart, itemWithCustomizations]);
   };
 
+    useEffect(() => {
+      fetch("http://127.0.0.1:8000/menu")
+        .then((response) => response.json())
+        .then((data) => {setData(data.menuItems);console.log("Data recived...")})
+        .catch((error) => console.error("Error fetching menu:", error));
+    }, []);
 
-
-
+    console.log((MenuData))
   
   const displayedItems = menuItems;
 
@@ -57,7 +64,7 @@ const MenuSection = () => {
       {/* The Grid of Menu Items */}
       <main className="menu-main-content">
         <div className="menu-items-grid">
-          {displayedItems.map((item) => (
+          {MenuData.map((item) => (
             <MenuItemCard key={item.id} item={item} onAddClick={openModalWithItem} />
           ))}
         </div>
