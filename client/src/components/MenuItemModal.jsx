@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { X, Plus, Minus } from 'lucide-react';
 import './Styles/MenuItemModal.css';
 import { useCart } from './CartContext';
-
+import NotificationToast from './Notification';
 const TAX_RATE = 0.05; // 5% tax
 
 const MenuItemModal = ({ item, onClose, onAddToCart }) => {
@@ -107,6 +107,7 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
   };
 
   const handleAddToCartClick = () => {
+    console.log('Adding to cart:')
     const orderItem = {
       ...item,
       quantity,
@@ -256,6 +257,8 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
             <button onClick={handleAddToCartClick} className="add-to-cart-btn">
               Add to Cart - ₹{finalAmountWithTax.toFixed(2)}
             </button>
+
+
           </div>
         </div>
       </div>

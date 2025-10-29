@@ -26,7 +26,7 @@ function CartPage({onClose}) {
               <img src={item.imageSrc || '/placeholder.jpg'} alt={item.name} className="cart-item-img" />
               <div className="cart-item-info">
                 <div className="cart-item-title">{item.name}</div>
-                <div className="cart-item-category">{item.category || ''}</div>
+                <div className="cart-item-category">{item.category_id || ''}</div>
               </div>
               <div className="cart-qty-price">
                 <div className="qty-controls">

@@ -60,7 +60,7 @@ MenuItemCard.propTypes = {
     description: PropTypes.string.isRequired,
     price: PropTypes.number.isRequired,
     imageSrc: PropTypes.string.isRequired,
-    category: PropTypes.string.isRequired,
+    category_id: PropTypes.string.isRequired,
     customizations: PropTypes.array, // Added optional customizations
     addons: PropTypes.array,         // Added optional addons
   }).isRequired,

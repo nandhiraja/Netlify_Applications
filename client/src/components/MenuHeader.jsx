@@ -4,9 +4,9 @@ import CartPage from './CartPage'; // or import your CartPage if it is styled as
 import './Styles/MenuHeader.css';
 import { useEffect } from 'react';
 const categories = ["Indian", "Italian", "Chinese", "Desserts", "Beverages", "Indian", "Italian", "Chinese", "Desserts", "Beverages", "Indian", "Italian", "Chinese", "Desserts", "Beverages"];
+const BASE_URL = import.meta.env.VITE_Base_url;
 
-
-const MenuHeader = () => {
+const MenuHeader = ({onSelectCategory}) => {
   const [activeCategory, setActiveCategory] = useState("Indian");
     const [category, setCategory] = useState([]);
     const [MenuData, setData] = useState([]);
@@ -15,8 +15,9 @@ const MenuHeader = () => {
   const [showCart, setShowCart] = useState(false);    // <-- Add this state
 
   const handleCategoryClick = (category) => {
-    setActiveCategory(category);
-    console.log(`Switching to category: ${category}`);
+    onSelectCategory(category.legacy_id);
+    setActiveCategory(category.name);
+    console.log(`Switching to category: ${category.legacy_id}`);
   };
 
   const toggleExpanded = () => {
@@ -31,22 +32,40 @@ const MenuHeader = () => {
     setShowCart(false);
   };
 
+  useEffect(() => {
+  console.log("Fetching category data from backend...", BASE_URL);
+
+  fetch(`${BASE_URL}/menu/categories`)
+    .then(async (response) => {
+      console.log("Status:", response.status);
+      console.log("Response Type:", response.headers.get("content-type"));
+
+      const text = await response.text(); // get raw text to inspect
+      console.log("Raw Response:", text);
+
+      try {
+        const data = JSON.parse(text);
+        setCategory(data);
+        console.log("Menu section category Data received:", data);
+      } catch (err) {
+        console.error("Response was not JSON:", err);
+      }
+    })
+    .catch((err) => {
+      console.error("Some error in category fetching:", err);
+    });
+}, []);
 
 
   // useEffect(()=>{
-  //   fetch("http://127.0.0:8000/categories").then((resposse)=>resposse.json())
-  //   .then((data)=>setCategory(data)).catch(()=>{console.error("Some error in category fetching..")})
+  //   console.log("Fetching category data from backend... "+ BASE_URL);
+  //   fetch(`https://4351c8539fe4.ngrok-free.app/menu/categories`).then((response)=>response.json())
+  //   .then((data)=>{setCategory(data);console.log(" menu section category Data recived..." , data)  })
+  //   .catch(()=>{console.error("Some error in category fetching..")})
   // },[])
 
-  // console.log(category)
-  useEffect(() => {
-      fetch("http://127.0.0.1:8000/menu")
-        .then((response) => response.json())
-        .then((data) => setData(data.menuItems))
-        .catch((error) => console.error("Error fetching menu:", error));
-    }, []);
-
-    console.log((MenuData))
+ 
+    console.log(("This fetch from MenuHeader :" ,category))
 
   return (
     <header className="menu-header">
@@ -56,13 +75,13 @@ const MenuHeader = () => {
       {/* Category Navigation */}
       <div className="category-container">
         <nav className={`category-navigation ${isExpanded ? 'expanded' : 'collapsed'}`}>
-          {categories.map((category, index) => (
+          {category.map((category, index) => (
             <button
-              key={`${category}-${index}`}
+              key={`${category.name}-${category.legacy_id}`}
               onClick={() => handleCategoryClick(category)}
-              className={`category-btn ${activeCategory === category ? 'active' : ''}`}
+              className={`category-btn ${activeCategory === category.name ? 'active' : ''}`}
             >
-              {category}
+              {category.name}
             </button>
           ))}
         </nav>

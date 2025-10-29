@@ -5,8 +5,8 @@
       "name": "Butter Chicken",
       "description": "Tender chicken in creamy tomato sauce",
       "price": 100.99,
-      "imageSrc": "/Images/biryani-rice-dish.jpg",
-      "category": "Indian",
+      "imageSrc": "https://res.cloudinary.com/dzfwsfvwz/image/upload/v1761713415/steamed-dumplings_locgfm.jpg",
+      "category_id": 1,
       "customizations": [],
       "addons": []
     },
@@ -16,7 +16,7 @@
       "description": "Fragrant rice with spiced meat",
       "price": 11.99,
       "imageSrc": "/Images/butter-chicken-curry.png",
-      "category": "Indian",
+      "category_id": 2,
       "customizations": [
         {
           "id": "biryani_choice",
@@ -42,7 +42,7 @@
       "description": "Crispy pastry with spiced filling",
       "price": 4.99,
       "imageSrc": "/Images/cappuccino-coffee.png",
-      "category": "Indian",
+      "category_id": 2,
       "customizations": [],
       "addons": []
     },
@@ -52,7 +52,7 @@
       "description": "Grilled cottage cheese with spices",
       "price": 9.99,
       "imageSrc": "/Images/samosa-fried-pastry.jpg",
-      "category": "Indian",
+      "category_id": 1,
       "customizations": [],
       "addons": []
     },
@@ -62,7 +62,7 @@
       "description": "Soft flatbread with garlic butter",
       "price": 3.99,
       "imageSrc": "/Images/steamed-dumplings.jpg",
-      "category": "Chinese",
+      "category_id": 3,
       "customizations": [],
       "addons": []
     }
