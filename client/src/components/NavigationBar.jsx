@@ -1,18 +1,16 @@
-import './Styles/MenuHeader.css';
-import { ShoppingCart, Home, ChevronDown, ChevronUp } from 'lucide-react';
+import './Styles/Navigation.css';
+import { ShoppingCart, Home } from 'lucide-react';
 import React, { useState } from 'react';
-import CartPage from './CartPage'; // or import your CartPage if it is styled as a modal
-import HomePage from './Home';
-import {Link, useNavigate } from "react-router-dom"
-const Navigation = ()=>{
-  const navigate = useNavigate();
-  const [showHome, setShowHome] = useState(false);  
-  const [showCart, setShowCart] = useState(false);    // <-- Add this state
+import CartPage from './CartPage';
+import { useNavigate } from "react-router-dom";
+import { useCart } from './CartContext';
 
-const handleHomeClick = () => {
-    setShowHome(true);
-  };
-const handleCartClick = () => {
+const Navigation = () => {
+  const navigate = useNavigate();
+  const { cart } = useCart();
+  const [showCart, setShowCart] = useState(false);
+
+  const handleCartClick = () => {
     setShowCart(true);
   };
 
@@ -21,40 +19,45 @@ const handleCartClick = () => {
   };
 
   const handleBack = () => {
-    navigate('/'); // Go back to previous page
+    navigate('/dinein');
   };
 
+  // Calculate total items in cart
+  const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
 
- return (
+  return (
     <>
-    <header className="menu-header">
-     <div className="header-top">
-        <div className="header-title-section">
-          <h1 className="menu-title">Menu</h1>
-          <p className="menu-subtitle">
-            <span className="subtitle-accent">~</span> Take Away
-          </p>
-        </div>
-        {/* Utility Buttons */}
-        <div className="header-actions">
-          <button className="action-btn home-btn" onClick ={handleBack}>
-            <Home size={18} />
+      <nav className="navigation-bar">
+        <div className="nav-container">
+          <button className="nav-btn home-btn" onClick={handleBack} aria-label="Go to home">
+            <Home size={20} />
+            <span className="nav-label">Home</span>
           </button>
-          <button className="action-btn cart-btn" onClick={handleCartClick}>
-            <ShoppingCart size={18} />
+          
+          <div className="nav-logo">
+            <span className="logo-text">Menu</span>
+          </div>
+          
+          <button className="nav-btn cart-btn" onClick={handleCartClick} aria-label="View cart">
+            <div className="cart-icon-wrapper">
+              <ShoppingCart size={20} />
+              {totalItems > 0 && (
+                <span className="cart-badge">{totalItems}</span>
+              )}
+            </div>
+            <span className="nav-label">Cart</span>
           </button>
         </div>
-      </div>
-    
-    </header>
+      </nav>
 
-    {/* Cart Modal/Page */}
+      {/* Cart Modal/Page */}
       {showCart && (
-        <CartPage onClose={handleCartClose} />
+        <div className="cart-modal-overlay">
+          <CartPage onClose={handleCartClose} />
+        </div>
       )}
-      
     </>
- )
+  );
 }
 
 export default Navigation;

@@ -8,10 +8,10 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: linear-gradient(to bottom, #faf8f5 0%, #f5f2ed 100%);
+  background: linear-gradient(to bottom, #fffaed 0%, #fffaed 100%);
   padding: 28px 48px 16px;
   box-shadow: 0 4px 12px rgba(74, 55, 40, 0.08);
-  border-bottom: 2px solid #e8dfd3;
+  border-bottom: 2px solid #f8c98c;
 }
 
 /* Top Bar Layout */

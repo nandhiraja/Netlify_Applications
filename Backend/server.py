@@ -26,7 +26,7 @@ def get_menu():
     return data
 @app.get("/menu/categories")
 def get_menu():
-    with open("Category.json", "r") as file:
+    with open("newData.json", "r") as file:
         data = json.load(file)
         # print(data, type(data))
     return data

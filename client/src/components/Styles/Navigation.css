@@ -1,0 +1,206 @@
+/* Navigation Bar - Sticky at top */
+.navigation-bar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding: 0;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  gap: 20px;
+}
+
+/* Navigation Buttons */
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+  min-width: 70px;
+  position: relative;
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.nav-btn:active {
+  transform: translateY(0);
+}
+
+.nav-label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Logo/Title in Center */
+.nav-logo {
+  flex: 1;
+  text-align: center;
+}
+
+.logo-text {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Cart Icon with Badge */
+.cart-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  background: #ff4757;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  border: 2px solid white;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Cart Modal Overlay */
+.cart-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Responsive Design */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .nav-container {
+    padding: 10px 16px;
+  }
+
+  .logo-text {
+    font-size: 20px;
+  }
+
+  .nav-btn {
+    min-width: 60px;
+    padding: 8px 12px;
+  }
+
+  .nav-label {
+    font-size: 11px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .nav-container {
+    padding: 8px 12px;
+    gap: 12px;
+  }
+
+  .logo-text {
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
+
+  .nav-btn {
+    min-width: 50px;
+    padding: 8px 10px;
+    gap: 2px;
+  }
+
+  .nav-label {
+    font-size: 10px;
+  }
+
+  .cart-badge {
+    top: -6px;
+    right: -8px;
+    font-size: 9px;
+    padding: 2px 5px;
+    min-width: 16px;
+  }
+}
+
+/* Small Mobile */
+@media (max-width: 360px) {
+  .nav-container {
+    padding: 6px 10px;
+  }
+
+  .logo-text {
+    font-size: 16px;
+  }
+
+  .nav-btn {
+    padding: 6px 8px;
+  }
+
+  .nav-label {
+    display: none; /* Hide labels on very small screens */
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .navigation-bar {
+    background: linear-gradient(135deg, #2d3561 0%, #3d2654 100%);
+  }
+}

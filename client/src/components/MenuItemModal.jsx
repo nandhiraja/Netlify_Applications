@@ -3,72 +3,29 @@ import PropTypes from 'prop-types';
 import { X, Plus, Minus } from 'lucide-react';
 import './Styles/MenuItemModal.css';
 import { useCart } from './CartContext';
-import NotificationToast from './Notification';
-const TAX_RATE = 0.05; // 5% tax
 
 const MenuItemModal = ({ item, onClose, onAddToCart }) => {
   const { addItem } = useCart();
 
   const [quantity, setQuantity] = useState(1);
-  const [selectedCustomizations, setSelectedCustomizations] = useState({});
-  const [selectedAddons, setSelectedAddons] = useState({});
   const [currentTotalPrice, setCurrentTotalPrice] = useState(0);
+  const [totalTax, setTotalTax] = useState(0);
 
-  // Initialize selected customizations
-  useEffect(() => {
-    if (item && item.customizations) {
-      const initialCustoms = {};
-      item.customizations.forEach(custom => {
-        if (custom.type === 'radio' && custom.options.length > 0) {
-          initialCustoms[custom.id] = custom.options[0].value;
-        } else if (custom.type === 'checkbox' || custom.type === 'multiple') {
-          initialCustoms[custom.id] = []; // Array for multiple selections
-        }
-      });
-      setSelectedCustomizations(initialCustoms);
-    }
-    setSelectedAddons({});
-    setQuantity(1);
-  }, [item]);
-
-  // Calculate total price
+  // Calculate total price with taxes
   const calculateTotalPrice = useCallback(() => {
-    let basePrice = item.price;
-
-    // Add customization price impacts
-    item.customizations.forEach(custom => {
-      if (custom.type === 'radio') {
-        const selectedOptionValue = selectedCustomizations[custom.id];
-        if (selectedOptionValue) {
-          const option = custom.options.find(opt => opt.value === selectedOptionValue);
-          if (option && typeof option.price_impact === 'number') {
-            basePrice += option.price_impact;
-          }
-        }
-      } else if (custom.type === 'checkbox' || custom.type === 'multiple') {
-        // Handle multiple selections
-        const selectedValues = selectedCustomizations[custom.id] || [];
-        selectedValues.forEach(value => {
-          const option = custom.options.find(opt => opt.value === value);
-          if (option && typeof option.price_impact === 'number') {
-            basePrice += option.price_impact;
-          }
-        });
-      }
-    });
-
-    // Add addon prices
-    Object.keys(selectedAddons).forEach(addonId => {
-      if (selectedAddons[addonId]) {
-        const addon = item.addons.find(a => a.id === addonId);
-        if (addon) {
-          basePrice += addon.price;
-        }
-      }
-    });
-
-    return basePrice * quantity;
-  }, [item, quantity, selectedCustomizations, selectedAddons]);
+    const basePrice = item.price;
+    
+    // Calculate tax amount from the enriched taxes array
+    let taxAmount = 0;
+    if (item.taxes && item.taxes.length > 0) {
+      taxAmount = item.taxes.reduce((sum, tax) => {
+        return sum + (basePrice * tax.percentage / 100);
+      }, 0);
+    }
+    
+    setTotalTax(taxAmount);
+    return (basePrice + taxAmount) * quantity;
+  }, [item, quantity]);
 
   useEffect(() => {
     if (item) {
@@ -76,64 +33,37 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
     }
   }, [item, calculateTotalPrice]);
 
+  useEffect(() => {
+    setQuantity(1);
+  }, [item]);
+
   if (!item) return null;
 
   const handleQuantityChange = (amount) => {
     setQuantity(prev => Math.max(1, prev + amount));
   };
 
-  const handleCustomizationChange = (customId, value, type) => {
-    if (type === 'radio') {
-      setSelectedCustomizations(prev => ({ ...prev, [customId]: value }));
-    } else if (type === 'checkbox' || type === 'multiple') {
-      // Handle multiple selections
-      setSelectedCustomizations(prev => {
-        const currentSelections = prev[customId] || [];
-        const isSelected = currentSelections.includes(value);
-        
-        if (isSelected) {
-          // Remove the value
-          return { ...prev, [customId]: currentSelections.filter(v => v !== value) };
-        } else {
-          // Add the value
-          return { ...prev, [customId]: [...currentSelections, value] };
-        }
-      });
-    }
-  };
-
-  const handleAddonToggle = (addonId) => {
-    setSelectedAddons(prev => ({ ...prev, [addonId]: !prev[addonId] }));
-  };
-
   const handleAddToCartClick = () => {
-    console.log('Adding to cart:')
     const orderItem = {
       ...item,
       quantity,
-      selectedCustomizations,
-      selectedAddons,
       finalPrice: currentTotalPrice,
+      pricePerUnit: item.price + totalTax,
       timestamp: Date.now(),
     };
+    
+    console.log('Adding to cart:', orderItem);
     onAddToCart(orderItem);
     addItem(orderItem); 
     onClose();
   };
 
-  const totalBeforeTax = currentTotalPrice;
-  const taxAmount = totalBeforeTax * TAX_RATE;
-  const finalAmountWithTax = totalBeforeTax + taxAmount;
-
-  const isOptionSelected = (customId, value, type) => {
-    if (type === 'radio') {
-      return selectedCustomizations[customId] === value;
-    } else if (type === 'checkbox' || type === 'multiple') {
-      const selections = selectedCustomizations[customId] || [];
-      return selections.includes(value);
-    }
-    return false;
-  };
+  const basePrice = item.price;
+  const taxPerUnit = totalTax;
+  const pricePerUnit = basePrice + taxPerUnit;
+  const subtotal = basePrice * quantity;
+  const totalTaxAmount = taxPerUnit * quantity;
+  const finalAmount = currentTotalPrice;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -145,72 +75,67 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
             <X size={24} />
           </button>
           <div className="modal-header-content">
-            <h2 className="modal-title">{item.name}</h2>
-            <p className="modal-description">{item.description}</p>
-            <div className="modal-base-price">Base Price: ₹{item.price.toFixed(2)}</div>
+            <h2 className="modal-title">{item.itemName}</h2>
+            
+            {/* Display tags */}
+            {item.tags && item.tags.length > 0 && (
+              <div className="modal-tags">
+                {item.tags.map((tag, index) => (
+                  <span key={index} className="modal-tag">{tag}</span>
+                ))}
+              </div>
+            )}
+            
+            <div className="modal-item-info">
+              <div className="modal-base-price">
+                Base Price: ₹{basePrice.toFixed(2)}
+              </div>
+              {item.itemNature && (
+                <div className="modal-item-nature">
+                  Type: {item.itemNature}
+                </div>
+              )}
+              {item.skuCode && (
+                <div className="modal-sku">
+                  SKU: {item.skuCode}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Modal Body */}
         <div className="modal-body">
           
-          {/* Customizations Section */}
-          {item.customizations && item.customizations.length > 0 && (
+          {/* Tax Breakdown Section */}
+          {item.taxes && item.taxes.length > 0 && (
             <div className="modal-section">
-              <h3 className="section-title">Customize Your Order</h3>
-              {item.customizations.map(custom => (
-                <div key={custom.id} className="customization-group">
-                  <p className="customization-label">
-                    {custom.name}
-                    {(custom.type === 'checkbox' || custom.type === 'multiple') && 
-                      <span className="multiple-indicator">(Select multiple)</span>
-                    }
-                  </p>
-                  <div className="options-grid">
-                    {custom.options.map(option => (
-                      <button
-                        key={option.value}
-                        onClick={() => handleCustomizationChange(custom.id, option.value, custom.type)}
-                        className={`option-btn ${isOptionSelected(custom.id, option.value, custom.type) ? 'selected' : ''}`}
-                      >
-                        <span className="option-label">{option.label}</span>
-                        {option.price_impact !== 0 && (
-                          <span className="option-price">
-                            {option.price_impact > 0 ? '+' : ''}₹{option.price_impact.toFixed(2)}
-                          </span>
-                        )}
-                      </button>
-                    ))}
+              <h3 className="section-title">Tax Information</h3>
+              <div className="tax-details">
+                {item.taxes.map((tax, index) => (
+                  <div key={index} className="tax-item">
+                    <span className="tax-name">{tax.name}</span>
+                    <span className="tax-rate">{tax.percentage}%</span>
+                    <span className="tax-amount">
+                      ₹{(basePrice * tax.percentage / 100).toFixed(2)}
+                    </span>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Add-ons Section */}
-          {item.addons && item.addons.length > 0 && (
-            <div className="modal-section">
-              <h3 className="section-title">Add Extra Items</h3>
-              <div className="addons-list">
-                {item.addons.map(addon => (
-                  <label key={addon.id} className="addon-item">
-                    <div className="addon-info">
-                      <span className="addon-name">{addon.name}
-                      <span className="addon-price">.    +₹{addon.price.toFixed(2)}</span>
-                      </span>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={!!selectedAddons[addon.id]}
-                      onChange={() => handleAddonToggle(addon.id)}
-                      className="addon-checkbox"
-                    />
-                    <span className="checkbox-custom"></span>
-                  </label>
                 ))}
+                <div className="tax-item total-tax">
+                  <span className="tax-name">Total Tax per unit</span>
+                  <span className="tax-amount">₹{taxPerUnit.toFixed(2)}</span>
+                </div>
               </div>
             </div>
           )}
+
+          {/* Price per unit */}
+          <div className="modal-section">
+            <div className="price-per-unit">
+              <span>Price per unit (incl. tax):</span>
+              <span className="price-highlight">₹{pricePerUnit.toFixed(2)}</span>
+            </div>
+          </div>
 
           {/* Quantity Selector */}
           <div className="modal-section">
@@ -238,16 +163,16 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
         <div className="modal-footer">
           <div className="price-breakdown">
             <div className="price-row">
-              <span>Subtotal:</span>
-              <span>₹{totalBeforeTax.toFixed(2)}</span>
+              <span>Base Amount ({quantity} × ₹{basePrice.toFixed(2)}):</span>
+              <span>₹{subtotal.toFixed(2)}</span>
             </div>
             <div className="price-row">
-              <span>Tax ({TAX_RATE * 100}%):</span>
-              <span>₹{taxAmount.toFixed(2)}</span>
+              <span>Total Tax:</span>
+              <span>₹{totalTaxAmount.toFixed(2)}</span>
             </div>
             <div className="price-row total">
-              <span>Total:</span>
-              <span>₹{finalAmountWithTax.toFixed(2)}</span>
+              <span>Final Amount:</span>
+              <span>₹{finalAmount.toFixed(2)}</span>
             </div>
           </div>
           <div className="footer-actions">
@@ -255,10 +180,8 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
               Cancel
             </button>
             <button onClick={handleAddToCartClick} className="add-to-cart-btn">
-              Add to Cart - ₹{finalAmountWithTax.toFixed(2)}
+              Add {quantity} to Cart - ₹{finalAmount.toFixed(2)}
             </button>
-
-
           </div>
         </div>
       </div>
@@ -267,7 +190,25 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
 };
 
 MenuItemModal.propTypes = {
-  item: PropTypes.object.isRequired,
+  item: PropTypes.shape({
+    itemId: PropTypes.string.isRequired,
+    itemName: PropTypes.string.isRequired,
+    price: PropTypes.number.isRequired,
+    itemNature: PropTypes.string,
+    categoryId: PropTypes.string.isRequired,
+    skuCode: PropTypes.string,
+    status: PropTypes.string,
+    measuringUnit: PropTypes.string,
+    itemTagIds: PropTypes.arrayOf(PropTypes.string),
+    taxTypeIds: PropTypes.arrayOf(PropTypes.string),
+    tags: PropTypes.arrayOf(PropTypes.string),
+    taxes: PropTypes.arrayOf(PropTypes.shape({
+      taxTypeId: PropTypes.string,
+      name: PropTypes.string,
+      percentage: PropTypes.number
+    })),
+    taxAmount: PropTypes.number,
+  }).isRequired,
   onClose: PropTypes.func.isRequired,
   onAddToCart: PropTypes.func.isRequired,
 };

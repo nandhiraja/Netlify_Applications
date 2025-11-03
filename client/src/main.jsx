@@ -6,6 +6,7 @@ import { CartProvider } from './components/CartContext';
 import{ createBrowserRouter , RouterProvider}  from "react-router-dom"
 import MenuSection from "./components/MenuSection"
 import HomePage from './components/Home';
+import MenuPage from './components/MenuPage'; 
 
 
 import { Outlet } from 'react-router-dom';
@@ -22,7 +23,9 @@ const router = createBrowserRouter([
     element: <Layout />,
     children: [
       { path: "/", element: <HomePage/> },
-      { path: "/dinein", element: <MenuSection/> }
+      { path: "/dinein", element: <MenuPage/> },
+      { path: `/item/:id`, element: <MenuSection/> }
+
     ]
   }
 ]);

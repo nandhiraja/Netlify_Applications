@@ -462,3 +462,97 @@
   background: linear-gradient(180deg, #6b4e37, #4a3728);
   border-radius: 5px;
 }
+/* Tags in modal */
+.modal-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.modal-tag {
+  background: #f0f0f0;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Item info section */
+.modal-item-info {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-item-nature,
+.modal-sku {
+  font-size: 13px;
+  color: #777;
+}
+
+/* Tax details section */
+.tax-details {
+  background: #f9f9f9;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tax-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.tax-item:not(:last-child) {
+  border-bottom: 1px solid #eee;
+}
+
+.tax-item.total-tax {
+  border-top: 2px solid #ddd;
+  padding-top: 12px;
+  font-weight: 600;
+  color: #333;
+}
+
+.tax-name {
+  flex: 1;
+  font-size: 14px;
+}
+
+.tax-rate {
+  margin: 0 12px;
+  font-size: 13px;
+  color: #666;
+  background: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.tax-amount {
+  font-weight: 500;
+  color: #333;
+}
+
+/* Price per unit highlight */
+.price-per-unit {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.price-highlight {
+  font-size: 20px;
+  font-weight: 700;
+}

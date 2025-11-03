@@ -126,7 +126,7 @@
   align-items: center;
   gap: 6px;
   padding: 11px 24px;
-  background: linear-gradient(135deg, #f19142 0%, #bd5506 100%);
+  background: linear-gradient(135deg, #647a53 0%, #435e2f 100%);
   color: #ffffff;
   border: none;
   border-radius: 10px;
@@ -156,7 +156,7 @@
 }
 
 .add-btn:hover {
-  background: linear-gradient(135deg, #b85e0f 0%, #f18746 100%);
+  background: linear-gradient(135deg, #6d964f 0%, #86be5b 100%);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(74, 55, 40, 0.3);
 }
@@ -241,4 +241,102 @@
   .add-btn:active {
     transform: scale(0.95);
   }
+}
+
+/* Tags styling */
+.item-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.tag-badge {
+  background: #f0f0f0;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Veg/Non-Veg indicator */
+.food-type-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border-radius: 3px;
+  z-index: 2;
+}
+
+.food-type-badge.veg {
+  border-color: #0f8a3f;
+}
+
+.food-type-badge.non-veg {
+  border-color: #c12626;
+}
+
+.food-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.food-type-badge.veg .food-indicator {
+  background: #0f8a3f;
+}
+
+.food-type-badge.non-veg .food-indicator {
+  background: #c12626;
+}
+
+/* Price container */
+.price-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tax-info {
+  font-size: 10px;
+  color: #888;
+}
+
+.total-price {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+/* Tax breakdown */
+.tax-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #eee;
+}
+
+.tax-detail {
+  font-size: 10px;
+  color: #666;
+  background: #f9f9f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.item-nature {
+  font-size: 11px;
+  color: #999;
+  margin: 4px 0 0 0;
 }

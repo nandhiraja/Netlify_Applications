@@ -2,10 +2,38 @@
   "menuItems": [
     {
       "id": 1,
-      "name": "Butter Chicken",
+      "name": "Banglore Masal Dosa",
       "description": "Tender chicken in creamy tomato sauce",
       "price": 100.99,
-      "imageSrc": "https://res.cloudinary.com/dzfwsfvwz/image/upload/v1761713415/steamed-dumplings_locgfm.jpg",
+      "imageSrc": "https://media-cdn.tripadvisor.com/media/photo-s/05/73/cd/86/upahara-darshini.jpg",
+      "category_id": 1,
+      "customizations": [],
+      "addons": []
+    },
+     {
+      "id": 1,
+      "name": "Normal dosa",
+      "description": "Tender chicken in creamy tomato sauce",
+      "price": 30.00,
+      "imageSrc": "https://www.cookwithkushi.com/wp-content/uploads/2021/12/IMG_5770d.jpg",
+      "category_id": 1,
+      "customizations": [],
+      "addons": []
+    }, {
+      "id": 1,
+      "name": "Triangle Dosa",
+      "description": "Tender chicken in creamy tomato sauce",
+      "price": 200.99,
+      "imageSrc": "https://www.savaari.com/blog/wp-content/uploads/2023/02/Indian-Food-Masala-Dosa-Breakfast-Indian-Cuisine-6971359.jpeg",
+      "category_id": 1,
+      "customizations": [],
+      "addons": []
+    }, {
+      "id": 1,
+      "name": "Plain Rost",
+      "description": "Tender chicken in creamy tomato sauce",
+      "price": 50.99,
+      "imageSrc": "https://imgmediagumlet.lbb.in/media/2025/02/67a5c4c276aaa01fac39858b_1738917058984.jpg",
       "category_id": 1,
       "customizations": [],
       "addons": []
@@ -48,10 +76,10 @@
     },
     {
       "id": 4,
-      "name": "Paneer Tikka",
+      "name": "Podi Dosa",
       "description": "Grilled cottage cheese with spices",
       "price": 9.99,
-      "imageSrc": "/Images/samosa-fried-pastry.jpg",
+      "imageSrc": "https://static.toiimg.com/thumb/msid-67787232,width-400,resizemode-4/67787232.jpg",
       "category_id": 1,
       "customizations": [],
       "addons": []

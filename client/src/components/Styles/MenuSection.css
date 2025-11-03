@@ -6,7 +6,7 @@
 /* Main Container */
 .menu-section-container {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #f5f2ed 0%, #ebe5dc 100%);
+  background: linear-gradient(to bottom, #fffaed 0%, #fffaed 100%);
   position: relative;
 }
 
