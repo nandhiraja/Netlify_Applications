@@ -185,7 +185,7 @@
 
 /* Add Button */
 .add-btn {
-  background: var(--primary-gradient);
+  background: var(--primary-button-gradient);
   color: var(--text-white);
   border: none;
   padding: 0.75rem 1.5rem;
@@ -201,6 +201,8 @@
 }
 
 .add-btn:hover {
+    background: var(--primary-button-hover-gradient);
+
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }

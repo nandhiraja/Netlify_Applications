@@ -1,6 +1,13 @@
 :root {
+    ::-webkit-scrollbar{
+        display: none;
+    }
   /* Primary Brand Colors */
   --primary-gradient: linear-gradient(135deg, #fff9e8 0%, #faf3e0 100%);
+    --primary-button-gradient: linear-gradient(135deg, #3a8a3e 0%, #17531a 100%);
+        --primary-button-hover-gradient: linear-gradient(135deg, #55c05b 0%, #25a32b 100%);
+
+
   --primary-color: #fcf7d5;
   --primary-dark: #08570c;
   
