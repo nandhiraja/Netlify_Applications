@@ -52,19 +52,19 @@ const MenuItemCard = ({ item, onAddClick }) => {
           {/* Item Name */}
           <h3 className="item-name">{itemName}</h3>
           
-          {/* Display Tags */}
+          {/* Display Tags
           {tags.length > 0 && (
             <div className="item-tags">
               {tags.slice(0, 3).map((tag, index) => (
                 <span key={index} className="tag-badge">{tag}</span>
               ))}
             </div>
-          )}
-          
-          {/* Item Nature (Service/Goods) */}
+          )} */}
+
+          {/* Item Nature (Service/Goods)                                               on thing is command
           {itemNature && (
             <p className="item-nature">{itemNature}</p>
-          )}
+          )} */}
         </div>
         
         {/* Price and Add Button */}

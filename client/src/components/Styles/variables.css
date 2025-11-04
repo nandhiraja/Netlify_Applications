@@ -4,25 +4,29 @@
     }
   /* Primary Brand Colors */
   --primary-gradient: linear-gradient(135deg, #fff9e8 0%, #faf3e0 100%);
-    --primary-button-gradient: linear-gradient(135deg, #3a8a3e 0%, #17531a 100%);
-        --primary-button-hover-gradient: linear-gradient(135deg, #55c05b 0%, #25a32b 100%);
+    --primary-button-gradient: linear-gradient(135deg, #70ec76 0%, #1c8f22 100%);
+--primary-button-hover-gradient: linear-gradient(135deg, #55c05b 0%, #25a32b 100%);
+ --background-card-color:linear-gradient(145deg, #ebe3b8 0%, #f5e9c0 100%) ;
+--text-button-color-gradient:linear-gradient(145deg, #f5c56c 0%, #f5e9c0 100%);
 
 
-  --primary-color: #fcf7d5;
-  --primary-dark: #08570c;
-  
+
+  --primary-color: #2b611a;
+  --primary-dark: #316435;
+  --text-card-Name-primary : black;
+--text-price-color-primary :rgb(223, 16, 16);
   /* Accent Colors */
   --accent-gold: #fbbf24;
   --accent-red: #ff4757;
   --success-green: #0f8a3f;
   
   /* Neutral Colors */
-  --background-white: white;
+  --background-white: rgb(30, 80, 25);
   --background-light: #f9fafb;
   --background-dark: #1f2937;
   
   /* Text Colors */
-  --text-primary: #35422e;
+  --text-primary: #ffffff;
   --text-secondary: #6b7280;
   --text-light: #9ca3af;
   --text-white: #0b0b0c;

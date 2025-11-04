@@ -2,7 +2,8 @@
 
 /* Cart Root Container */
 .cart-root {
-  min-height: 100vh;
+  min-height: 80vh;
+  min-width: 50vh;
   background: var(--primary-gradient);
   display: flex;
   flex-direction: column;

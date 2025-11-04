@@ -111,7 +111,7 @@
 
 .card-image-wrapper {
   position: relative;
-  height: 200px;
+  height: 250px;
   overflow: hidden;
 }
 
@@ -137,7 +137,7 @@
 }
 
 .card-content {
-  padding: 1.5rem;
+  padding: 1.1rem;
   text-align: center;
 }
 

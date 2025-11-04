@@ -1,7 +1,7 @@
 @import './variables.css';
 
 .menu-item-card {
-  background: var(--background-white);
+  background: var(--background-card-color);
   border: 3px solid var(--border-light);
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -38,7 +38,7 @@
 /* Image Section */
 .item-image-container {
   position: relative;
-  height: 200px;
+  height: 250px;
   overflow: hidden;
   background: var(--background-light);
 }
@@ -117,7 +117,7 @@
 
 .item-name {
   font-size: 1.4rem;
-  color: var(--text-primary);
+  color: var(--text-card-Name-primary);
   margin: 0 0 0.75rem 0;
   font-weight: 700;
 }
@@ -164,7 +164,7 @@
 
 .item-price {
   font-size: 1.5rem;
-  color: var(--text-primary);
+  color: var(--text-price-color-primary);
   font-weight: 700;
 }
 
@@ -186,7 +186,7 @@
 /* Add Button */
 .add-btn {
   background: var(--primary-button-gradient);
-  color: var(--text-white);
+  color: var(--text-button-color-gradient);
   border: none;
   padding: 0.75rem 1.5rem;
   border-radius: var(--radius-lg);
