@@ -10,6 +10,7 @@ const MenuItemCard = ({ item, onAddClick }) => {
     tags = [], 
     taxes = [], 
     taxAmount = 0,
+    imageURL,
     itemNature,
     skuCode 
   } = item;
@@ -28,12 +29,13 @@ const MenuItemCard = ({ item, onAddClick }) => {
         <img
           className="item-image"
           // src={`/images/${skuCode}.jpg`} // You can use skuCode or itemId for image mapping
-          src={`/Images/burger.jpg`} // You can use skuCode or itemId for image mapping
+          src={item.imageURL ||  './placeholder.jpg' } // You can use skuCode or itemId for image mapping
 
           alt={itemName}
           loading="lazy"
           onError={(e) => {
-            e.target.src = '/images/placeholder.jpg'; // Fallback image
+             e.target.onerror = null;
+            e.target.src = './placeholder.jpg'; // Fallback image
           }}
         />
         <div className="image-overlay"></div>

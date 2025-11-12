@@ -91,11 +91,11 @@ const MenuPage = () => {
           >
             <div className="card-image-wrapper">
               <img 
-                src={category.imageUrl}
+                src={category.imageUrl ||  './placeholder.jpg'}
                 alt={category.name}
                 className="card-image"
                 onError={(e) => {
-                  e.target.src = '/placeholder.jpg'; // Fallback image
+                  e.target.src = '/home/nandhiraja/Nandhiraja C/Naveen Nk project/restaurant-kiosk-frontend/client/public/Images/spaghetti-carbonara.png'; // Fallback image
                 }}
               />
               <div className="card-overlay"></div>

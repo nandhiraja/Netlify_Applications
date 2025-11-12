@@ -174,7 +174,7 @@ const handleProceedToPayment = async () => {
                <div className="cart-item-card" key={idx}>
   <div className="cart-item-top">
     <img 
-      src={`/images/${item.skuCode}.jpg`} 
+      src={item.imageURL ||  './placeholder.jpg' } 
       alt={item.itemName} 
       className="cart-item-img"
       onError={(e) => {

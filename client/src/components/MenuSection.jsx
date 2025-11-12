@@ -46,7 +46,7 @@ const MenuSection = () => {
         return sum + (tax ? (item.price * tax.percentage / 100) : 0);
       }, 0) : 0
   }));
-
+  console.log(items, enrichedItems)
   const openModalWithItem = (item) => {
     setSelectedMenuItem(item);
     setIsModalOpen(true);
