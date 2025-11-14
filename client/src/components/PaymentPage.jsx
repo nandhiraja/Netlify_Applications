@@ -12,7 +12,7 @@ const PaymentPage = () => {
   const navigate = useNavigate();
   const { clearCart } = useCart();
 
-  const { orderId, totalAmount, orderDetails } = location.state || {};
+  const { KDSInvoiceId, orderId, totalAmount, orderDetails } = location.state || {};
   
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [expandedMethod, setExpandedMethod] = useState(null);
@@ -112,13 +112,19 @@ const PaymentPage = () => {
       }
 
       try {
-        const response = await fetch(`${BASE_URL}/payments/qr/status/${orderId}`);
-        
+        const response = await fetch(`${BASE_URL}/payments/qr/status/${orderId}`,{
+          headers:{
+              "ngrok-skip-browser-warning": "true"
+          }
+        });
+        let raw_data =  await response.text()
         if (!response.ok) {
           throw new Error('Failed to check status');
         }
 
-        const result = await response.json();
+        const result = JSON.parse(raw_data);
+        
+        // const result = await response.json();
         console.log('QR Status:', result);
         
         // Result: { order_id, amount_paise, status, payment_method, transaction_id, payment_timestamp, created_at }
@@ -151,6 +157,8 @@ const PaymentPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+           "ngrok-skip-browser-warning": "true"
+
         },
         body: JSON.stringify({
           order_id: orderId,
@@ -196,13 +204,19 @@ const PaymentPage = () => {
       }
 
       try {
-        const response = await fetch(`${BASE_URL}/payments/edc/status/${orderId}`);
-        
+        const response = await fetch(`${BASE_URL}/payments/edc/status/${orderId}`,{
+          headers:{
+              "ngrok-skip-browser-warning": "true"
+          }
+        });
+        let raw_data =  await response.text()
         if (!response.ok) {
           throw new Error('Failed to check status');
         }
 
-        const result = await response.json();
+        const result = JSON.parse(raw_data);
+        
+       
         console.log('EDC Status:', result);
         
         // Result: { order_id, amount_paise, status, payment_method, transaction_id, edc_reference, card_last_four, payment_timestamp, created_at }
@@ -239,6 +253,8 @@ const PaymentPage = () => {
           <h2>KITCHEN ORDER TICKET</h2>
           <hr>
           <p><strong>Order ID:</strong> ${orderId}</p>
+          <p><strong>KDS Invoice ID:</strong> ${KDSInvoiceId}</p>
+
           <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
           <hr>
           ${orderDetails.items.map(item => `
@@ -277,7 +293,8 @@ const PaymentPage = () => {
           <div class="header">
             <h2>RESTAURANT BILL</h2>
             <p><strong>Order ID:</strong> ${orderId}</p>
-            <p><strong>Transaction ID:</strong> ${transactionDetails?.transaction_id || 'N/A'}</p>
+            <p><strong>KDS Invoice ID:</strong> ${KDSInvoiceId}</p>
+
             <p>${new Date().toLocaleString()}</p>
           </div>
           <hr>

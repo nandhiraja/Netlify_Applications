@@ -83,6 +83,7 @@ const handleProceedToPayment = async () => {
     // API returns: { order_id, total_amount_include_tax, total_amount_exclude_tax }
     navigate('/payment', { 
       state: { 
+        KDSInvoiceId: result.kds_invoice_id,
         orderId: result.order_id,
         totalAmount: result.total_amount_include_tax,
         orderDetails: {

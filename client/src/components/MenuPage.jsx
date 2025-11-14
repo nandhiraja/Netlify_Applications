@@ -40,16 +40,21 @@ const MenuPage = () => {
 
   useEffect(() => {
     console.log("Fetching category data from backend...", BASE_URL);
-  
-    fetch(`${BASE_URL}/catalog/?channel=Palas Kiosk`)
+    
+    fetch(`${BASE_URL}/catalog/?channel=Palas Kiosk`, {
+     headers: {
+       "ngrok-skip-browser-warning": "true"
+     }
+      })
       .then(async (response) => {
-        console.log("Status:", response.status);
+        let raw = await response.text();
+        console.log("Status:", response.status ,raw);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
   
-        const data = await response.json();
+        const data = await JSON.parse(raw);
         
         // Store all data
         setAllMenuData(data);
