@@ -13,7 +13,7 @@ const Navigation = ({ categoryName, orderType }) => {
   };
 
   const handleBack = () => {
-    navigate('/');
+    navigate('/dinein');
   };
 
   const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);

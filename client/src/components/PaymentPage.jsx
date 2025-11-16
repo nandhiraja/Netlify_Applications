@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { CreditCard, QrCode, ChevronDown, ChevronUp, Printer, Send, Check, Loader } from 'lucide-react';
 import './Styles/PaymentPage.css';
 import { useCart } from './CartContext';
-
+import TokenSuccess from './TokenSuccess'
 const BASE_URL = import.meta.env.VITE_Base_url;
 
 const PaymentPage = () => {
@@ -12,8 +12,10 @@ const PaymentPage = () => {
   const navigate = useNavigate();
   const { clearCart } = useCart();
 
-  const { KDSInvoiceId, orderId, totalAmount, orderDetails } = location.state || {};
-  
+  const { kot_code, orderId, totalAmount, orderDetails } = location.state || {};
+  const [showTokenPage, setShowTokenPage] = useState(false);
+  const [KDSInvoiceId, setKDSInvoiceId] = useState(null);
+
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [expandedMethod, setExpandedMethod] = useState(null);
   const [qrData, setQrData] = useState(null);
@@ -129,14 +131,19 @@ const PaymentPage = () => {
         
         // Result: { order_id, amount_paise, status, payment_method, transaction_id, payment_timestamp, created_at }
        // ✅ CORRECTED: Check payment_status instead of status
-      if (result.payment_status === 'COMPLETED') {
-        setPaymentStatus('SUCCESS');
-        setTransactionDetails(result);
-        clearCart();
-        localStorage.removeItem('restaurantCart');
 
-        clearInterval(pollingRef.current);
-      } else if (result.payment_status === 'FAILED') {
+      if (result.payment_status === 'COMPLETED') {
+          
+          setPaymentStatus('SUCCESS');
+          setTransactionDetails(result);
+          setKDSInvoiceId(result.kds_invoice_id)
+          clearCart();
+          localStorage.removeItem('restaurantCart');
+          // Redirect to Token Page instead of rendering old UI
+          setShowTokenPage(true);
+          clearInterval(pollingRef.current);
+        }
+        else if (result.payment_status === 'FAILED') {
         setPaymentStatus('FAILED');
         setError('Payment failed. Please try again.');
         clearInterval(pollingRef.current);
@@ -237,102 +244,375 @@ const PaymentPage = () => {
 
   // Print KOT
   const handlePrintKOT = () => {
-    const printWindow = window.open('', '', 'width=300,height=600');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>KOT - ${orderId}</title>
-          <style>
-            body { font-family: monospace; padding: 10px; font-size: 12px; }
-            h2 { text-align: center; margin: 10px 0; }
-            .item { margin: 5px 0; }
-            hr { border: 1px dashed #333; }
-          </style>
-        </head>
-        <body>
-          <h2>KITCHEN ORDER TICKET</h2>
-          <hr>
-          <p><strong>Order ID:</strong> ${orderId}</p>
-          <p><strong>KDS Invoice ID:</strong> ${KDSInvoiceId}</p>
+const printWindow = window.open('', '', 'width=300,height=600');
+printWindow.document.write(`
+  <html>
+    <head>
+      <title>KOT - ${orderId}</title>
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        body { 
+          font-family: 'Courier New', monospace;
+          padding: 10px;
+          font-size: 13px;
+          line-height: 1.5;
+          max-width: 280px;
+          margin: 0 auto;
+          color: #333;
+        }
+        .center { 
+          text-align: center; 
+        }
+        .restaurant-name {
+          font-size: 16px;
+          font-weight: bold;
+          margin-bottom: 5px;
+          letter-spacing: 1px;
+        }
+        .location {
+          font-size: 12px;
+          margin-bottom: 15px;
+        }
+        .info-line {
+          font-size: 12px;
+          margin: 3px 0;
+        }
+        .label {
+          display: inline-block;
+          min-width: 80px;
+        }
+        .order-number {
+          font-size: 14px;
+          margin: 15px 0 10px 0;
+          font-weight: bold;
+        }
+        .divider {
+          border-bottom: 1px dashed #666;
+          margin: 10px 0;
+        }
+        .items-header {
+          display: flex;
+          margin: 15px 0 8px 0;
+          font-size: 12px;
+          font-weight: bold;
+          border-bottom: 1px dashed #333;
+          padding-bottom: 5px;
+        }
+        .items-header .qty-col {
+          flex: 0 0 40px;
+        }
+        .items-header .item-col {
+          flex: 1;
+        }
+        .item-row {
+          display: flex;
+          margin: 8px 0;
+          font-size: 12px;
+          line-height: 1.6;
+        }
+        .item-row .qty {
+          flex: 0 0 40px;
+          font-weight: bold;
+        }
+        .item-row .item-name {
+          flex: 1;
+          word-wrap: break-word;
+        }
+        .instruction-section {
+          margin-top: 15px;
+          font-size: 11px;
+        }
+        .kot-ids {
+          background: #f5f5f5;
+          padding: 10px;
+          margin: 10px 0;
+          border: 1px dashed #999;
+          font-size: 11px;
+        }
+        .footer {
+          margin-top: 20px;
+          font-size: 11px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="center">
+        <div class="restaurant-name">Karnataka Tiffin Room</div>
+        <div class="location">Mumbai</div>
+      </div>
 
-          <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
-          <hr>
-          ${orderDetails.items.map(item => `
-            <div class="item">
-              <span>${item.itemName} x${item.quantity}</span>
-            </div>
-          `).join('')}
-          <hr>
-          <p style="text-align: center; margin-top: 20px;">** END OF KOT **</p>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
+      <div class="info-line">
+        <span class="label">BILL TYPE:</span> Dine In
+      </div>
+      <div class="info-line">
+        <span class="label">BILL No:</span> KTR${orderId}
+      </div>
+      <div class="info-line">
+        <span class="label">DATE:</span> ${new Date().toLocaleDateString('en-GB')} 
+        <span class="label">TIME:</span> ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}
+      </div>
+      <div class="info-line">
+        <span class="label">KIOSK:</span> KTR1
+      </div>
+
+      <div class="info-line" style="margin-top: 10px;">
+        <span class="label">Name:</span>
+      </div>
+      <div class="info-line">
+        <span class="label">Mob No:</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="kot-ids center">
+        <div style="margin: 3px 0;"><strong>KOT-ID:</strong> ${kot_code}</div>
+        <div style="margin: 3px 0;"><strong>KDS Invoice ID:</strong> ${KDSInvoiceId}</div>
+      </div>
+
+      <div class="order-number center">Order No: ${orderId}</div>
+
+      <div class="divider"></div>
+
+      <div class="items-header">
+        <div class="qty-col">QTY</div>
+        <div class="item-col">ITEMS</div>
+      </div>
+
+      ${orderDetails.items.map(item => `
+        <div class="item-row">
+          <div class="qty">${item.quantity}</div>
+          <div class="item-name">${item.itemName}</div>
+        </div>
+      `).join('')}
+
+      <div class="divider"></div>
+
+      <div class="instruction-section">
+        Instruction -
+      </div>
+
+      <div class="footer center">
+        <div style="margin-top: 25px; font-size: 10px;">** KITCHEN ORDER TICKET **</div>
+      </div>
+    </body>
+  </html>
+`);
+printWindow.document.close();
+printWindow.print();
+
   };
 
   // Print Bill
   const handlePrintBill = () => {
-    const printWindow = window.open('', '', 'width=400,height=700');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Bill - ${orderId}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; font-size: 13px; }
-            h2 { text-align: center; margin: 10px 0; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .item-row { display: flex; justify-content: space-between; margin: 8px 0; }
-            .totals { margin-top: 20px; border-top: 2px solid #333; padding-top: 10px; }
-            .total-row { display: flex; justify-content: space-between; margin: 5px 0; font-weight: bold; }
-            hr { border: 1px solid #333; }
-            .footer { text-align: center; margin-top: 30px; font-size: 11px; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h2>RESTAURANT BILL</h2>
-            <p><strong>Order ID:</strong> ${orderId}</p>
-            <p><strong>KDS Invoice ID:</strong> ${KDSInvoiceId}</p>
+   const printWindow = window.open('', '', 'width=400,height=700');
+printWindow.document.write(`
+  <html>
+    <head>
+      <title>Bill - ${orderId}</title>
+      <style>
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+        body { 
+          font-family: 'Courier New', monospace;
+          padding: 10px 15px;
+          font-size: 12px;
+          line-height: 1.4;
+          max-width: 300px;
+          margin: 0 auto;
+          color: #333;
+        }
+        .center { 
+          text-align: center; 
+        }
+        .restaurant-name {
+          font-size: 14px;
+          font-weight: bold;
+          margin-bottom: 2px;
+        }
+        .tagline {
+          font-size: 11px;
+          margin-bottom: 8px;
+        }
+        .info-line {
+          font-size: 10px;
+          margin: 1px 0;
+        }
+        .section-title {
+          font-weight: bold;
+          font-size: 11px;
+          margin-top: 10px;
+          margin-bottom: 5px;
+        }
+        .divider {
+          border-bottom: 1px dashed #666;
+          margin: 8px 0;
+        }
+        .bill-info {
+          font-size: 10px;
+          margin: 2px 0;
+        }
+        .table-header {
+          display: flex;
+          justify-content: space-between;
+          font-size: 10px;
+          font-weight: bold;
+          margin: 8px 0 5px 0;
+          padding-bottom: 3px;
+          border-bottom: 1px solid #333;
+        }
+        .table-header .desc { flex: 2; }
+        .table-header .qty { flex: 0.5; text-align: center; }
+        .table-header .rate { flex: 1; text-align: right; }
+        .table-header .amount { flex: 1; text-align: right; }
+        .item-row {
+          display: flex;
+          justify-content: space-between;
+          font-size: 11px;
+          margin: 4px 0;
+        }
+        .item-row .desc { flex: 2; }
+        .item-row .qty { flex: 0.5; text-align: center; }
+        .item-row .rate { flex: 1; text-align: right; }
+        .item-row .amount { flex: 1; text-align: right; }
+        .total-section {
+          margin-top: 10px;
+          border-top: 1px solid #333;
+          padding-top: 5px;
+        }
+        .total-row {
+          display: flex;
+          justify-content: space-between;
+          font-size: 11px;
+          margin: 3px 0;
+        }
+        .total-row.grand-total {
+          font-weight: bold;
+          font-size: 13px;
+          margin-top: 5px;
+          padding-top: 5px;
+          border-top: 1px dashed #333;
+        }
+        .order-number {
+          font-size: 11px;
+          margin-top: 15px;
+          margin-bottom: 5px;
+        }
+        .order-number-big {
+          font-size: 48px;
+          font-weight: bold;
+          margin: 10px 0;
+        }
+        .footer {
+          margin-top: 20px;
+          font-size: 11px;
+        }
+        .kot-info {
+          background: #f0f0f0;
+          padding: 8px;
+          margin: 10px 0;
+          border: 1px dashed #999;
+          border-radius: 3px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="center">
+        <div class="restaurant-name">Karnataka Tiffin Room</div>
+        <div class="tagline">Bringing the flavors of Bengaluru</div>
+        <div class="info-line">Mumbai</div>
+        <div class="info-line">PH</div>
+        <div class="info-line">GST No: 27AA0FH7156G1Z0</div>
+        <div class="info-line">SAG No:</div>
+        <div class="info-line">CIN No:</div>
+        <div class="info-line">FSSAI No: 21524005001190</div>
+        <div class="section-title">TAX INVOICE</div>
+      </div>
 
-            <p>${new Date().toLocaleString()}</p>
+      <div class="divider"></div>
+
+      <div class="kot-info center">
+        <div class="bill-info"><strong>KOT-ID:</strong> ${kot_code}</div>
+        <div class="bill-info"><strong>KDS Invoice ID:</strong> ${KDSInvoiceId}</div>
+      </div>
+
+      <div class="bill-info">BILL No: KTR${orderId}</div>
+      <div class="bill-info">Order No: ${orderId}</div>
+      <div class="bill-info">DATE: ${new Date().toLocaleDateString('en-GB')}</div>
+      <div class="bill-info">TIME: ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</div>
+      <div class="bill-info">TYPE: Dine In</div>
+      <div class="bill-info">KIOSK: KTR1</div>
+      <div class="bill-info">PAYMENT: ${transactionDetails?.payment_method || 'PhonePe'}</div>
+
+      <div class="divider"></div>
+
+      <div class="table-header">
+        <div class="desc">DESCRIPTION</div>
+        <div class="qty">QTY</div>
+        <div class="rate">RATE</div>
+        <div class="amount">AMOUNT</div>
+      </div>
+
+      ${orderDetails.items.map(item => {
+        const itemPrice = item.price;
+        const itemTotal = itemPrice * item.quantity;
+        return `
+          <div class="item-row">
+            <div class="desc">${item.itemName}</div>
+            <div class="qty">${item.quantity}</div>
+            <div class="rate">${itemPrice.toFixed(2)}</div>
+            <div class="amount">${itemTotal.toFixed(2)}</div>
           </div>
-          <hr>
-          <h3>Items:</h3>
-          ${orderDetails.items.map(item => {
-            const itemTotal = (item.price + (item.taxAmount || 0)) * item.quantity;
-            return `
-              <div class="item-row">
-                <span>${item.itemName} x${item.quantity}</span>
-                <span>₹${itemTotal.toFixed(2)}</span>
-              </div>
-            `;
-          }).join('')}
-          <div class="totals">
-            <div class="item-row">
-              <span>Subtotal:</span>
-              <span>₹${orderDetails.subtotal.toFixed(2)}</span>
-            </div>
-            <div class="item-row">
-              <span>Tax:</span>
-              <span>₹${orderDetails.tax.toFixed(2)}</span>
-            </div>
-            <hr>
-            <div class="total-row">
-              <span>TOTAL:</span>
-              <span>₹${orderDetails.total.toFixed(2)}</span>
-            </div>
-          </div>
-          <div class="footer">
-            <p>Payment Method: ${transactionDetails?.payment_method || 'N/A'}</p>
-            <p>Thank you for dining with us!</p>
-            <p>Visit again soon</p>
-          </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
+        `;
+      }).join('')}
+
+      <div class="total-section">
+        <div class="total-row">
+          <span>Total</span>
+          <span>Rs ${orderDetails.subtotal.toFixed(2)}</span>
+        </div>
+        <div class="total-row">
+          <span>CGST</span>
+          <span>2.5%</span>
+          <span>+${(orderDetails.tax / 2).toFixed(2)}</span>
+        </div>
+        <div class="total-row">
+          <span>SGST</span>
+          <span>2.5%</span>
+          <span>+${(orderDetails.tax / 2).toFixed(2)}</span>
+        </div>
+        <div class="total-row grand-total">
+          <span>PAYABLE AMOUNT</span>
+          <span>Rs ${orderDetails.total.toFixed(0)}</span>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+        <div class="center">
+          <div class="order-number">Order No</div>
+          <div class="order-number-big">${kot_code}</div>
+        </div>
+
+      <div class="divider"></div>
+
+      <div class="footer center">
+        <div>Thank You</div>
+        ${whatsappNumber ? `<div style="margin-top: 10px;">Bill sent to: ${whatsappNumber}</div>` : ''}
+      </div>
+    </body>
+  </html>
+`);
+printWindow.document.close();
+printWindow.print();
+
+   
   };
 
   // Send via WhatsApp
@@ -342,13 +622,30 @@ const PaymentPage = () => {
       return;
     }
     
-    const message = `*KITCHEN ORDER TICKET*\n\nOrder ID: ${orderId}\nTransaction ID: ${transactionDetails?.transaction_id || 'N/A'}\nDate: ${new Date().toLocaleString()}\n\n*Items:*\n${orderDetails.items.map(item => `${item.itemName} x${item.quantity}`).join('\n')}\n\nSubtotal: ₹${orderDetails.subtotal.toFixed(2)}\nTax: ₹${orderDetails.tax.toFixed(2)}\nTotal: ₹${orderDetails.total.toFixed(2)}\n\nThank you for your order!`;
+    const message = `*KITCHEN ORDER TICKET*\n\nOrder ID: ${kot_code}\nTransaction ID: ${transactionDetails?.transaction_id || 'N/A'}\nDate: ${new Date().toLocaleString()}\n\n*Items:*\n${orderDetails.items.map(item => `${item.itemName} x${item.quantity}`).join('\n')}\n\nSubtotal: ₹${orderDetails.subtotal.toFixed(2)}\nTax: ₹${orderDetails.tax.toFixed(2)}\nTotal: ₹${orderDetails.total.toFixed(2)}\n\nThank you for your order!`;
     
     const whatsappUrl = `https://wa.me/91${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
     setShowWhatsappInput(false);
     setWhatsappNumber('');
   };
+
+
+  if (showTokenPage) {
+  return (
+    <TokenSuccess
+      token={kot_code} // Use the orderId, or actual token value if different
+      KDSInvoiceId={KDSInvoiceId}
+      orderId={orderId}
+      orderDetails={orderDetails}
+      transactionDetails={transactionDetails}
+      onPrintBill={handlePrintBill}
+      onPrintKOT={handlePrintKOT}
+      onSendWhatsapp={(whatsappNumber) => handleWhatsAppKOT(whatsappNumber)}
+    />
+  );
+}
+
 
   return (
     <div className="payment-root">
