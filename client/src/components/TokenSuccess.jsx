@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, } from 'react';
 import './Styles/TokenSuccess.css';
 import { Printer, MessageCircle } from 'lucide-react';
 
@@ -13,6 +14,9 @@ const TokenSuccess = ({
   onPrintKOT,
   onSendWhatsapp
 }) => {
+
+    const navigate = useNavigate();
+  
   const [showWhatsappInput, setShowWhatsappInput] = useState(false);
   const [whatsappNumber, setWhatsappNumber] = useState('');
 
@@ -98,6 +102,13 @@ const TokenSuccess = ({
               >
                 <MessageCircle size={20} />
                 <span>WhatsApp</span>
+              </button>
+
+              <button 
+                className="token-btn  "
+                onClick={() => navigate('/')}
+              >
+                Start New Order
               </button>
             </div>
 

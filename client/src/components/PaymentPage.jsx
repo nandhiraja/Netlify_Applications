@@ -154,95 +154,145 @@ const PaymentPage = () => {
     }, 3000); // Poll every 3 seconds
   };
 
-  // Initialize EDC Payment
-  const handleEDCPayment = async () => {
-    setLoadingEDC(true);
-    setError(null);
+ // Initialize EDC Payment
+const handleEDCPayment = async () => {
+  setLoadingEDC(true);
+  setError(null);
+  
+  try {
+    const response = await fetch(`${BASE_URL}/payments/edc/init`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        "ngrok-skip-browser-warning": "true"
+      },
+      body: JSON.stringify({
+        order_id: orderId,
+        amount_paise: amountInPaise
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to initialize EDC payment');
+    }
+
+    const result = await response.json();
+    console.log('EDC Initialized:', result);
     
+    setEdcData(result);
+    setPaymentStatus('PROCESSING');
+    
+    // Trigger mock payment FIRST, then start polling
+    await triggerMockPayment();
+    
+    // Start polling AFTER mock payment is triggered
+    startEDCStatusPolling();
+
+  } catch (error) {
+    console.error('Error initializing EDC:', error);
+    setError('Failed to initialize card payment. Please try again.');
+  } finally {
+    setLoadingEDC(false);
+  }
+};
+
+// Trigger mock payment via backend
+const triggerMockPayment = async () => {
+  try {
+    console.log('Triggering mock payment for order:', orderId);
+    
+    const response = await fetch(`${BASE_URL}/payments/edc/mock-trigger`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true"
+      },
+      body: JSON.stringify({ order_id: orderId })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to trigger mock payment');
+    }
+    
+    const data = await response.json();
+    console.log("Mock payment triggered successfully:", data);
+    
+    // Wait 2 seconds for PhonePe to process
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+  } catch (err) {
+    console.error("Payment API error:", err);
+    setError('Failed to trigger mock payment. Please try again.');
+    throw err;
+  }
+};
+
+
+
+
+
+// Poll EDC Payment Status
+const startEDCStatusPolling = () => {
+  let pollCount = 0;
+  const maxPolls = 120; // 6 minutes timeout
+  
+  pollingRef.current = setInterval(async () => {
+    pollCount++;
+    
+    if (pollCount > maxPolls) {
+      clearInterval(pollingRef.current);
+      setPaymentStatus('TIMEOUT');
+      setError('Payment timeout. Please try again.');
+      return;
+    }
+
     try {
-      const response = await fetch(`${BASE_URL}/payments/edc/init`, {
-        method: 'POST',
+      const response = await fetch(`${BASE_URL}/payments/edc/status/${orderId}`, {
         headers: {
-          'Content-Type': 'application/json',
-           "ngrok-skip-browser-warning": "true"
-
-        },
-        body: JSON.stringify({
-          order_id: orderId,
-          amount_paise: amountInPaise
-        })
+          "ngrok-skip-browser-warning": "true"
+        }
       });
-
+      
       if (!response.ok) {
-        throw new Error('Failed to initialize EDC payment');
+        throw new Error('Failed to check status');
       }
 
       const result = await response.json();
-      console.log('EDC Initialized:', result);
+      console.log('EDC Status:', result);
       
-      // Result: { order_id, amount_paise, edc_reference, status, timestamp, device_id }
-      setEdcData(result);
-      setPaymentStatus('PROCESSING');
+      // Use consistent field name - confirm with your backend
+      if (result.payment_status === 'COMPLETED') {
+        setPaymentStatus('SUCCESS');
+        setTransactionDetails(result);
+        setKDSInvoiceId(result.kds_invoice_id);
+        clearCart();
+        localStorage.removeItem('restaurantCart');
+        setShowTokenPage(true);
+        clearInterval(pollingRef.current);
+        
+      } else if (result.payment_status === 'FAILED' || result.payment_status === 'CANCELLED') {
+        setPaymentStatus('FAILED');
+        navigate("/");
+        setError('Payment failed or cancelled. Please try again.');
+        clearInterval(pollingRef.current);
+      }
       
-      // Start polling for EDC payment status
-      startEDCStatusPolling();
-
     } catch (error) {
-      console.error('Error initializing EDC:', error);
-      setError('Failed to initialize card payment. Please try again.');
-    } finally {
-      setLoadingEDC(false);
+      console.error('Error checking EDC status:', error);
+      // Don't stop polling on network errors, continue trying
+    }
+  }, 3000);
+};
+
+// Cleanup on unmount
+useEffect(() => {
+  return () => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
     }
   };
+}, []);
 
-  // Poll EDC Payment Status
-  const startEDCStatusPolling = () => {
-    let pollCount = 0;
-    const maxPolls = 120;
-    
-    pollingRef.current = setInterval(async () => {
-      pollCount++;
-      
-      if (pollCount > maxPolls) {
-        clearInterval(pollingRef.current);
-        setPaymentStatus('TIMEOUT');
-        setError('Payment timeout. Please try again.');
-        return;
-      }
-
-      try {
-        const response = await fetch(`${BASE_URL}/payments/edc/status/${orderId}`,{
-          headers:{
-              "ngrok-skip-browser-warning": "true"
-          }
-        });
-        let raw_data =  await response.text()
-        if (!response.ok) {
-          throw new Error('Failed to check status');
-        }
-
-        const result = JSON.parse(raw_data);
-        
-       
-        console.log('EDC Status:', result);
-        
-        // Result: { order_id, amount_paise, status, payment_method, transaction_id, edc_reference, card_last_four, payment_timestamp, created_at }
-        if (result.status === 'COMPLETED') {
-          setPaymentStatus('SUCCESS');
-          setTransactionDetails(result);
-          clearInterval(pollingRef.current);
-        } else if (result.status === 'FAILED' || result.status === 'CANCELLED') {
-          setPaymentStatus('FAILED');
-          setError('Payment failed or cancelled. Please try again.');
-          clearInterval(pollingRef.current);
-        }
-      } catch (error) {
-        console.error('Error checking EDC status:', error);
-      }
-    }, 3000);
-  };
-
-  // Print KOT
   const handlePrintKOT = () => {
 const printWindow = window.open('', '', 'width=300,height=600');
 printWindow.document.write(`
@@ -653,7 +703,7 @@ printWindow.print();
         {/* Order Summary */}
         <div className="order-summary-compact">
           <h3 className="summary-heading">Order Summary</h3>
-          <p className="order-id-display">Order ID: <strong>{orderId}</strong></p>
+          {/* <p className="order-id-display">Order ID: <strong>{orderId}</strong></p> */}
           
           <div className="summary-items">
             {orderDetails.items.map((item, idx) => {
@@ -800,11 +850,11 @@ printWindow.print();
                         </div>
                         <p className="qr-instruction">Scan this QR code with any UPI app</p>
                         <div className="transaction-details">
-                            <p><strong>Order ID:</strong> {qrData.order_id}</p>
-                            <p><strong>Transaction ID:</strong> {qrData.transaction_id}</p>
+                            {/* <p><strong>Order ID:</strong> {qrData.order_id}</p> */}
+                            {/* <p><strong>Transaction ID:</strong> {qrData.transaction_id}</p> */}
                             <p><strong>Amount:</strong> ₹{(parseInt(amountInPaise) / 100).toFixed(2)}</p>
                             <p><strong>Expires At:</strong> {new Date(qrData.expires_at).toLocaleString()}</p>
-                            <p><strong>Provider:</strong> {qrData.provider}</p>
+                            {/* <p><strong>Provider:</strong> {qrData.provider}</p> */}
                           </div>
 
                         

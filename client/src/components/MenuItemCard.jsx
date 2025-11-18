@@ -28,8 +28,7 @@ const MenuItemCard = ({ item, onAddClick }) => {
       <div className="item-image-container">
         <img
           className="item-image"
-          // src={`/images/${skuCode}.jpg`} // You can use skuCode or itemId for image mapping
-          src={item.imageURL ||  './placeholder.jpg' } // You can use skuCode or itemId for image mapping
+          src={item.imageURL || './placeholder.jpg' } // You can use skuCode or itemId for image mapping
 
           alt={itemName}
           loading="lazy"

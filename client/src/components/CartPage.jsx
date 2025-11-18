@@ -57,8 +57,9 @@ const handleProceedToPayment = async () => {
       item_skuid: item.skuCode || item.itemId.toString(),
       quantity: item.quantity
     })),
-    total_amount_include_tax: parseFloat(totalWithTax.toFixed(2)),
-    total_amount_exclude_tax: parseFloat(totalWithoutTax.toFixed(2))
+  total_amount_include_tax: Math.round(totalWithTax),
+  total_amount_exclude_tax: Math.round(totalWithoutTax),
+
   };
 
   console.log('Creating Order:', orderPayload);
