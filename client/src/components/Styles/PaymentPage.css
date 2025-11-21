@@ -62,7 +62,7 @@
 }
 
 .qty-badge {
-  background: var(--neutral-100);
+  background: var(--neutral-300);
   padding: 0.2rem 0.5rem;
   border-radius: 10px;
   font-size: 0.8rem;
@@ -138,7 +138,7 @@
 }
 
 .method-header:hover {
-  background: var(--neutral-100);
+  background: var(--neutral-900);
 }
 
 .method-info {
@@ -181,6 +181,7 @@
   padding: 1rem;
   border-radius: var(--radius-md);
   margin-bottom: 1rem;
+  border: 2px dotted var(--earth-dark);
 }
 
 .transaction-details p {
@@ -474,5 +475,87 @@
 }
 
 @keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.method-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 1rem;
+  cursor: default;
+  border-bottom: 2px ridge goldenrod;
+}
+
+.direct-pay-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  background: var(--gold-dark);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 130px;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(58, 102, 22, 0.3);
+}
+
+.direct-pay-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(106, 243, 78, 0.5);
+}
+
+.direct-pay-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.direct-pay-btn:disabled {
+  opacity: 0.7;
+  color: black;
+  font-size: 1em;
+  font-weight: bold;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #77a056 0%, #528a12 100%);
+}
+
+.direct-pay-btn.card-pay {
+  background: var(--gold-dark);
+}
+
+.direct-pay-btn.card-pay:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(177, 245, 87, 0.5);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }

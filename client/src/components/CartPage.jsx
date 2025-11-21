@@ -278,7 +278,7 @@ const handleProceedToPayment = async () => {
               ) : (
                 <>
                   <span>Proceed to Payment</span>
-                  <span style={{ fontWeight: 'bold' }}>₹{total.toFixed(2)}</span>
+                  {/* <span style={{ fontWeight: 'bold' }}>₹{total.toFixed(2)}</span> */}
                 </>
               )}
             </button>

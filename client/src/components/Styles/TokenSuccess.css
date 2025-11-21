@@ -28,12 +28,14 @@
 
 /* Corner Image Decorations */
 .corner-decoration {
+  background: var(--bg-warm);
   position: absolute;
-  width: 70px;
-  height: 70px;
+  width: 80px;
+  height: 80px;
   object-fit: contain;
   z-index: 10;
-  padding:15px;
+  padding: 6px;
+  border: 8px solid #ff9b00;
 }
 
 .corner-top-left {

@@ -1,9 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import './Styles/MenuItemCard.css';
 
 const MenuItemCard = ({ item, onAddClick }) => {
-  // Destructure with proper API field names
   const { 
     itemName, 
     price, 
@@ -15,12 +14,28 @@ const MenuItemCard = ({ item, onAddClick }) => {
     skuCode 
   } = item;
 
+  // State to manage image source with fallback logic
+  const [imgSrc, setImgSrc] = useState(imageURL || '/placeholder.jpg');
+  const [imageError, setImageError] = useState(false);
+
   // Calculate total price including taxes
   const totalPrice = price + taxAmount;
 
+  // Handle image load error
+  const handleImageError = () => {
+    if (!imageError) {
+      setImageError(true);
+      setImgSrc('/placeholder.jpg');
+    }
+  };
+
   // Determine if item is vegetarian/non-vegetarian from tags
-  const isVeg = tags.some(tag => tag.toLowerCase().includes('vegetarian') || tag.toLowerCase() === 've');
-  const isNonVeg = tags.some(tag => tag.toLowerCase().includes('non-vegetarian'));
+  const isVeg = tags.some(tag => 
+    tag.toLowerCase().includes('vegetarian') || tag.toLowerCase() === 'veg'
+  );
+  const isNonVeg = tags.some(tag => 
+    tag.toLowerCase().includes('non-vegetarian') || tag.toLowerCase() === 'non-veg'
+  );
 
   return (
     <div className="menu-item-card">
@@ -28,14 +43,10 @@ const MenuItemCard = ({ item, onAddClick }) => {
       <div className="item-image-container">
         <img
           className="item-image"
-          src={item.imageURL || './placeholder.jpg' } // You can use skuCode or itemId for image mapping
-
+          src={imgSrc}
           alt={itemName}
           loading="lazy"
-          onError={(e) => {
-             e.target.onerror = null;
-            e.target.src = './placeholder.jpg'; // Fallback image
-          }}
+          onError={handleImageError}
         />
         <div className="image-overlay"></div>
         
@@ -50,41 +61,22 @@ const MenuItemCard = ({ item, onAddClick }) => {
       {/* Item Details and Action */}
       <div className="item-content">
         <div className="item-details">
-          {/* Item Name */}
           <h3 className="item-name">{itemName}</h3>
-          
-          {/* Display Tags
-          {tags.length > 0 && (
-            <div className="item-tags">
-              {tags.slice(0, 3).map((tag, index) => (
-                <span key={index} className="tag-badge">{tag}</span>
-              ))}
-            </div>
-          )} */}
-
-          {/* Item Nature (Service/Goods)                                               on thing is command
-          {itemNature && (
-            <p className="item-nature">{itemNature}</p>
-          )} */}
         </div>
         
-        {/* Price and Add Button */}
         <div className="item-footer">
-          {/* Price Section */}
           <div className="price-container">
             <span className="item-price">
               <span className="currency-symbol">₹</span>
               {price.toFixed(2)}
             </span>
             
-            {/* Tax Information */}
             {taxAmount > 0 && (
               <span className="tax-info">
                 + ₹{taxAmount.toFixed(2)} tax
               </span>
             )}
             
-            {/* Total Price */}
             {taxAmount > 0 && (
               <span className="total-price">
                 Total: ₹{totalPrice.toFixed(2)}
@@ -92,14 +84,15 @@ const MenuItemCard = ({ item, onAddClick }) => {
             )}
           </div>
           
-          {/* Add Button */}
-          <button className="add-btn" onClick={() => onAddClick(item)}>
+          <button 
+            className="add-btn" 
+            onClick={() => onAddClick(item)}
+            aria-label={`Add ${itemName} to cart`}
+          >
             <span className="add-btn-text">Add</span>
-            <span className="add-btn-icon">+</span>
           </button>
         </div>
         
-        {/* Tax Breakdown (optional, can be shown on hover) */}
         {taxes.length > 0 && (
           <div className="tax-breakdown">
             {taxes.map((tax, index) => (
@@ -126,13 +119,14 @@ MenuItemCard.propTypes = {
     measuringUnit: PropTypes.string,
     itemTagIds: PropTypes.arrayOf(PropTypes.string),
     taxTypeIds: PropTypes.arrayOf(PropTypes.string),
-    tags: PropTypes.arrayOf(PropTypes.string), // Enriched data
+    imageURL: PropTypes.string,
+    tags: PropTypes.arrayOf(PropTypes.string),
     taxes: PropTypes.arrayOf(PropTypes.shape({
       taxTypeId: PropTypes.string,
       name: PropTypes.string,
       percentage: PropTypes.number
     })),
-    taxAmount: PropTypes.number, // Calculated tax amount
+    taxAmount: PropTypes.number,
   }).isRequired,
   onAddClick: PropTypes.func.isRequired,
 };

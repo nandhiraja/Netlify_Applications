@@ -61,7 +61,7 @@ const LandingPage = () => {
         <div className="logo-section">
           <div className="logo-illustration">
             <img 
-              src={`CenterImage_LOGO.png`}
+              src={`Center-Image-Logo.svg`}
               alt="Restaurant icon" 
               onError={(e) => {
                 e.target.src = 'https://via.placeholder.com/300x300?text=Logo';
@@ -76,11 +76,13 @@ const LandingPage = () => {
 
         {/* Rating Stars */}
         <div className="rating-stars">
-          <span className="star">★</span>
-          <span className="star">★</span>
-          <span className="star">★</span>
-          <span className="star">★</span>
-          <span className="star">★</span>
+          <span className="star"><img src="Star-flower.svg" alt="★" /></span>
+          <span className="star"><img src="Star-flower.svg" alt="★" /></span>
+          <span className="star"><img src="Star-flower.svg" alt="★" /></span>
+          <span className="star"><img src="Star-flower.svg" alt="★" /></span>
+          <span className="star"><img src="Star-flower.svg" alt="★" /></span>
+
+
         </div>
 
         {/* Order Section */}

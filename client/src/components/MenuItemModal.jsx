@@ -86,7 +86,7 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
               </div>
             )} */}
             
-            <div className="modal-item-info">
+            {/* <div className="modal-item-info">
               <div className="modal-base-price">
                 Base Price: ₹{basePrice.toFixed(2)}
               </div>
@@ -100,7 +100,7 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
                   SKU: {item.skuCode}
                 </div>
               )}
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -184,7 +184,7 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
               Cancel
             </button>
             <button onClick={handleAddToCartClick} className="add-to-cart-btn">
-              Add {quantity} to Cart - ₹{finalAmount.toFixed(2)}
+              Add {quantity} to Cart :  ₹{finalAmount.toFixed(2)}
             </button>
           </div>
         </div>

@@ -13,7 +13,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--bg-card);
+  background: var(--bg-warm);
   padding: 1.5rem 2rem;
   box-shadow: var(--shadow-md);
   display: flex;
@@ -23,7 +23,7 @@
 }
 
 .back-button {
-  background: var(--bg-card);
+  background: var(--bg-warm);
   border: 2px solid var(--gold-primary);
   width: 48px;
   height: 48px;
@@ -74,12 +74,12 @@
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
-  flex: 1;
+  /* flex: 1; */
 }
 
 /* Refined Menu Cards */
 .menu-card {
-  /* background: var(--bg-card); */
+  /* background: var(--bg-warm); */
   border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;

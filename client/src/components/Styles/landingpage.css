@@ -119,7 +119,7 @@ body {
 
 /* Restaurant Name */
 .restaurant-name {
-  font-size: 48px;
+  font-size: 58px;
   font-weight: 700;
   color: #4A5D3B;
   margin-bottom: 15px;
@@ -223,14 +223,11 @@ body {
 
 /* Tablet (1024px and below) */
 @media (max-width: 1024px) {
-  .kiosk-container {
-    /* border: 6px solid #F38120; */
-    /* box-shadow: inset 0 0 0 3px #FFF9E5, inset 0 0 0 9px #E8A317; */
-  }
+  
 
   .corner-icon {
-    width: 50px;
-    height: 50px;
+    width: 70px;
+    height: 70px;
   }
 
   .corner-icon img {
@@ -239,20 +236,20 @@ body {
   }
 
   .logo-illustration {
-    width: 250px;
-    height: 250px;
+    width: 25em;
+    height: 25em;
   }
 
   .restaurant-name {
-    font-size: 40px;
+    font-size: 50px;
   }
 
   .star {
-    font-size: 20px;
+    font-size: 25px;
   }
 
   .order-title {
-    font-size: 24px;
+    font-size: 20px;
   }
 
   .order-button {
@@ -263,10 +260,7 @@ body {
 
 /* Mobile (768px and below) */
 @media (max-width: 768px) {
-  .kiosk-container {
-    /* border: 5px solid #E8A317; */
-    /* box-shadow: inset 0 0 0 2px #FFF9E5, inset 0 0 0 7px #E8A317; */
-  }
+  
 
   .corner-icon {
     width: 40px;
@@ -366,11 +360,12 @@ body {
   }
 
   .star {
+    width: 20px;
     font-size: 16px;
   }
 
   .order-title {
-    font-size: 18px;
+    font-size: 9px;
   }
 
   .order-button {
@@ -381,7 +376,43 @@ body {
   .page-navigation {
     padding: 8px 16px;
     font-size: 13px;
+
   }
+
+
+.top-left {
+  top: -6px;
+  left: -6px;
+}
+
+.top-right {
+  top: -6px;
+  right: -6px;
+}
+
+.bottom-left {
+  bottom: -6px;
+  left: -6px;
+}
+
+.bottom-right {
+  bottom: -6px;
+  right: -6px;
+}
+ /* .kiosk-container {
+  width: 100%;
+  height: 100vh;
+  max-width: 100%;
+  background: linear-gradient(180deg, #FFF9E5 0%, #FFFAF0 100%);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 8px solid #4bb829;
+  box-shadow: inset 0 0 0 4px #ecbe26, inset 0 0 0 12px #5bc26c;
+  box-sizing: border-box;
+} */
 }
 
 /* Extra small screens (360px and below) */

@@ -3,6 +3,7 @@ import { ShoppingCart, Home } from 'lucide-react';
 import React from 'react';
 import { useNavigate } from "react-router-dom";
 import { useCart } from './CartContext';
+import { IoMdArrowRoundBack } from "react-icons/io";
 
 const Navigation = ({ categoryName, orderType }) => {
   const navigate = useNavigate();
@@ -22,8 +23,8 @@ const Navigation = ({ categoryName, orderType }) => {
     <nav className="navigation-bar">
       <div className="nav-container">
         <button className="nav-btn home-btn" onClick={handleBack}>
-          <Home size={20} />
-          <span className="nav-label">Home</span>
+          <IoMdArrowRoundBack size={20} />
+          <span className="nav-label">Menu</span>
         </button>
         
         <div className="nav-center">

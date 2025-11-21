@@ -96,11 +96,11 @@ const MenuPage = () => {
           >
             <div className="card-image-wrapper">
               <img 
-                src={category.imageUrl ||  './placeholder_dosa.jpg'}
+                src={`./Menu/${category.name}.jpg` ||  './placeholder_dosa.jpg'}
                 alt={category.name}
                 className="card-image"
                 onError={(e) => {
-                  e.target.src = 'https://www.google.com/imgres?q=doasa%20image&imgurl=https%3A%2F%2Fvismaifood.com%2Fstorage%2Fapp%2Fuploads%2Fpublic%2F8b4%2F19e%2F427%2Fthumb__1200_0_0_0_auto.jpg&imgrefurl=https%3A%2F%2Fvismaifood.com%2Fmysore-masala-dosa-recipe-crispy-masala-dosa-how-make-perfect-mysore-masala-dosa-batter-home&docid=hydnzhElP7bPeM&tbnid=CK3DIoAZ3EOW1M&vet=12ahUKEwjQwreR8f-QAxVr1DgGHe8DAKcQM3oECBoQAA..i&w=1200&h=800&hcb=2&ved=2ahUKEwjQwreR8f-QAxVr1DgGHe8DAKcQM3oECBoQAA'; // Fallback image
+                  e.target.src = './placeholder.jpg'; // Fallback image
                 }}
               />
               <div className="card-overlay"></div>
@@ -112,12 +112,12 @@ const MenuPage = () => {
         ))}
       </div>
 
-      <footer className="menu-footer">
+      {/* <footer className="menu-footer">
         <div className="footer-content">
           <p className="footer-text">Scroll to explore more delicious items</p>
           <div className="footer-decorative-line"></div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 };

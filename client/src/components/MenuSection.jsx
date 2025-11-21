@@ -117,13 +117,13 @@ const MenuSection = () => {
         isVisible={showNotification}
         onClose={() => setShowNotification(false)}
       />
-
+{/* 
       <footer className="menu-footer">
         <div className="footer-content">
           <p className="footer-text">Explore our delicious menu</p>
           <div className="footer-decorative-line"></div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 };
