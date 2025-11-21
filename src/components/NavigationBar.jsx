@@ -23,7 +23,7 @@ const Navigation = ({ categoryName, orderType }) => {
       <div className="nav-container">
         <button className="nav-btn home-btn" onClick={handleBack}>
           <Home size={20} />
-          <span className="nav-label">Home</span>
+          <span className="nav-label">Menu</span>
         </button>
         
         <div className="nav-center">
