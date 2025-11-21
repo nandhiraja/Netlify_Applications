@@ -95,7 +95,7 @@ const MenuItemCard = ({ item, onAddClick }) => {
           {/* Add Button */}
           <button className="add-btn" onClick={() => onAddClick(item)}>
             <span className="add-btn-text">Add</span>
-            <span className="add-btn-icon">+</span>
+            {/* <span className="add-btn-icon">+</span> */}
           </button>
         </div>
         

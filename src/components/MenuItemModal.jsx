@@ -180,7 +180,7 @@ const MenuItemModal = ({ item, onClose, onAddToCart }) => {
               Cancel
             </button>
             <button onClick={handleAddToCartClick} className="add-to-cart-btn">
-              Add {quantity} to Cart - ₹{finalAmount.toFixed(2)}
+              Add {quantity} to Cart : ₹{finalAmount.toFixed(2)}
             </button>
           </div>
         </div>
