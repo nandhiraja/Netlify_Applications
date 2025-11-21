@@ -19,7 +19,7 @@
 }
 
 .modal-container {
-  background: var(--bg-card);
+  background: var(--bg-warm);
   border-radius: var(--radius-xl);
   max-width: 650px;
   width: 100%;
@@ -28,7 +28,7 @@
   position: relative;
   box-shadow: var(--shadow-xl);
   animation: slideUp 0.3s ease;
-  border: 1px solid var(--neutral-200);
+  border: 1px solid var(--neutral-800);
 }
 
 @keyframes slideUp {
@@ -81,6 +81,7 @@
 }
 
 .modal-title {
+  font-family: var(--primary-theme-header);
   font-size: 1.8rem;
   margin: 0 0 1rem 0;
   font-weight: 700;
@@ -133,6 +134,7 @@
 }
 
 .section-title {
+  font-family: var(--secondary-theme-subheading);
   font-size: 1.2rem;
   color: var(--text-primary);
   margin: 0 0 1rem 0;
@@ -155,7 +157,9 @@
   background: var(--neutral-50);
   padding: 1.5rem;
   border-radius: var(--radius-md);
-  border: 1px solid var(--neutral-200);
+  /* border: 1px solid var(--neutral-200); */
+    border: 2px dotted var(--cart-border-color);
+
 }
 
 .tax-item {
@@ -212,6 +216,7 @@
 }
 
 .price-highlight {
+  font-family: var(--primary-theme-subheading);
   font-size: 1.6rem;
   font-weight: 700;
 }
@@ -265,9 +270,9 @@
 .modal-footer {
   position: sticky;
   bottom: 0;
-  background: var(--bg-card);
+  background: var(--bg-warm);
   padding: 1.5rem 2rem;
-  border-top: 1px solid var(--neutral-200);
+  border-top: 3px ridge var(--neutral-800);
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
 }
 
@@ -276,6 +281,7 @@
   padding: 1.25rem;
   border-radius: var(--radius-md);
   margin-bottom: 1.5rem;
+  border: 3px dotted var(--cart-border-color);
 }
 
 .price-row {
@@ -301,6 +307,8 @@
 
 .cancel-btn,
 .add-to-cart-btn {
+    font-family: var(--primary-theme-header);
+
   flex: 1;
   padding: 1rem;
   border: none;
@@ -312,9 +320,9 @@
 }
 
 .cancel-btn {
-  background: var(--neutral-100);
-  color: var(--text-secondary);
-  border: 2px solid var(--neutral-200);
+  background: var(--neutral-400);
+  color: var(--text-on-dark);
+  border: 2px solid var(--neutral-300);
 }
 
 .cancel-btn:hover {

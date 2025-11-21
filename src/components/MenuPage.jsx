@@ -101,12 +101,12 @@ const MenuPage = () => {
         ))}
       </div>
 
-      <footer className="menu-footer">
+      {/* <footer className="menu-footer">
         <div className="footer-content">
           <p className="footer-text">Scroll to explore more delicious items</p>
           <div className="footer-decorative-line"></div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 };

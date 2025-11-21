@@ -27,8 +27,10 @@
 }
 
 .summary-heading {
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-family: var(--primary-theme-subheading);
+
+  font-size: 1rem;
+  /* font-weight: 700; */
   color: var(--text-primary);
   margin: 0 0 1rem 0;
   padding-bottom: 0.75rem;
@@ -50,7 +52,9 @@
 }
 
 .item-name-qty {
-  font-size: 0.95rem;
+  font-family: var(--secondary-theme-subheading);
+
+  font-size: 1rem;
   color: var(--text-primary);
   display: flex;
   align-items: center;
@@ -58,7 +62,7 @@
 }
 
 .qty-badge {
-  background: var(--neutral-100);
+  background: var(--neutral-300);
   padding: 0.2rem 0.5rem;
   border-radius: 10px;
   font-size: 0.8rem;
@@ -104,8 +108,9 @@
 }
 
 .payment-heading {
-  font-size: 1.8rem;
-  font-weight: 700;
+  font-family: var(--primary-theme-subheading);
+  font-size: 1.3em;
+  /* font-weight: 700; */
   color: var(--text-primary);
   margin: 0 0 1.5rem 0;
 }
@@ -133,7 +138,7 @@
 }
 
 .method-header:hover {
-  background: var(--neutral-100);
+  background: var(--neutral-900);
 }
 
 .method-info {
@@ -469,5 +474,83 @@
 }
 
 @keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.method-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.2rem 1rem;
+  cursor: default;
+}
+
+.direct-pay-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  background: var(--gold-dark);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 130px;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(58, 102, 22, 0.3);
+}
+
+.direct-pay-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(124, 234, 102, 0.5);
+}
+
+.direct-pay-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.direct-pay-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: linear-gradient(135deg, #74945a 0%, #6b7280 100%);
+}
+
+.direct-pay-btn.card-pay {
+  background: var(--gold-dark);
+}
+
+.direct-pay-btn.card-pay:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(245, 87, 108, 0.5);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }

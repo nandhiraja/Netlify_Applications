@@ -28,12 +28,14 @@
 
 /* Corner Image Decorations */
 .corner-decoration {
+  background: var(--bg-warm);
   position: absolute;
-  width: 70px;
-  height: 70px;
+  width: 80px;
+  height: 80px;
   object-fit: contain;
   z-index: 10;
-  padding:15px;
+  padding: 6px;
+  border: 8px solid #ff9b00;
 }
 
 .corner-top-left {
@@ -355,8 +357,8 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border: 8px solid #E8A317;
-  box-shadow: inset 0 0 0 4px #FFF9E5, inset 0 0 0 12px #E8A317;
+  border: 8px solid #ff9b00;
+  box-shadow: inset 0 0 0 4px #FFF9E5, inset 0 0 0 12px #ff9b00;
   box-sizing: border-box;
 }
 
