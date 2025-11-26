@@ -76,7 +76,7 @@ const MenuPage = () => {
         <button className="back-button" onClick={handleBackClick}>
           <IoMdArrowRoundBack size={30}/>
         </button>
-        <h1 className="menu-title">Menu</h1>
+        <h1 className="nav-title">Category</h1>
       </div>
 
       {/* Menu Grid */}

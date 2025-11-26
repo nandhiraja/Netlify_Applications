@@ -3,12 +3,13 @@
 .payment-root {
   min-height: 100vh;
   background: var(--bg-warm);
-  padding: 2rem 1rem;
+  /* padding: 2rem 1rem; */
 }
 
 .payment-container {
+
   max-width: 1100px;
-  margin: 0 auto;
+  margin: 40px auto;
   display: grid;
   grid-template-columns: 350px 1fr;
   gap: 2rem;
@@ -138,7 +139,7 @@
 }
 
 .method-header:hover {
-  background: var(--neutral-900);
+  background: var(--neutral-800);
 }
 
 .method-info {
@@ -405,8 +406,8 @@
 }
 /* Payment Method Card - Selected State */
 .payment-method-card.selected {
-  border-color: var(--gold-primary);
-  box-shadow: 0 0 0 2px var(--gold-light);
+  border-color: var(--neutral-800);
+  /* box-shadow: 0 0 0 2px var(--neutral-900); */
 }
 
 /* Confirm Payment Button for QR */

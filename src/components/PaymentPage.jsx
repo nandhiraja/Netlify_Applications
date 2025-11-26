@@ -5,6 +5,8 @@ import { CreditCard, QrCode, ChevronDown, ChevronUp, Printer, Send, Check, Loade
 import './Styles/PaymentPage.css';
 import { useCart } from './CartContext';
 import TokenSuccess from './TokenSuccess'
+import { IoMdArrowRoundBack } from "react-icons/io";
+
 const BASE_URL = import.meta.env.VITE_Base_url;
 
 import {openPrintWindow, generateRestaruentBill,generateKOTBill } from './utils/printBillTemplates';
@@ -328,6 +330,9 @@ const handlePrintBill = () => {
     setShowWhatsappInput(false);
     setWhatsappNumber('');
   };
+ const handleBackCartClick = () => {
+    navigate('/cart');
+  };
 
 
   if (showTokenPage) {
@@ -347,7 +352,16 @@ const handlePrintBill = () => {
 
 
   return (
+
+    
     <div className="payment-root">
+      <div className="nav-header">
+              <button className="back-button" onClick={handleBackCartClick}>
+                <IoMdArrowRoundBack size={30}/>
+              </button>
+              <h1 className="nav-title">payment</h1>
+      </div>
+      
       <div className="payment-container">
         {/* Order Summary */}
         <div className="order-summary-compact">

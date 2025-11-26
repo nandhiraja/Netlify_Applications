@@ -111,9 +111,11 @@
 
 /* Thank You Title */
 .token-thank-you {
-  font-size: 1.8rem;
+  font-size: 1.6rem;
   font-weight: 700;
   color: var(--text-primary);
+  font-family: var(--primary-theme-header);
+
   text-align: center;
   line-height: 1.4;
   margin: 0;
@@ -123,9 +125,10 @@
 /* Token Display Box - LARGER SIZE */
 .token-display-box {
   position: relative;
-  width: 220px;
-  padding: 2.5rem 2rem;
-  background: var(--bg-card);
+  width: 300px;
+  height: 300px;
+  padding: 2.5rem 2.5rem;
+  background: white;
   border: 3px dashed #D4A574; /* Golden dashed border */
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
@@ -139,6 +142,8 @@
   position: absolute;
   top: -14px;
   left: 50%;
+  font-family: var(--primary-theme-header);
+
   transform: translateX(-50%);
   background: var(--bg-cream);
   padding: 0 16px;
@@ -151,6 +156,8 @@
 .token-number {
   font-size: 3rem;
   font-weight: 800;
+  font-family: var(--primary-theme-header);
+  text-transform: uppercase;
   color: var(--text-primary);
   line-height: 1;
   white-space: nowrap; /* Prevent text wrapping */

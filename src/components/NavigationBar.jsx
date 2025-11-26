@@ -24,7 +24,7 @@ const Navigation = ({ categoryName, orderType ,description}) => {
       <div className="nav-container">
         
         <button className="back-button-item back-btn" onClick={handleBack}>
-          <IoMdArrowRoundBack size={30} />
+          <IoMdArrowRoundBack size={25} />
         </button>
         
         <div className="nav-center">

@@ -114,17 +114,18 @@ const handleProceedToPayment = async () => {
 
   return (
     <div className="cart-root">
-      <header className="cart-header">
-  <div className="cart-header-content">
+      <header className="nav-header">
+  {/* <div className="cart-header-content"> */}
     <span 
-      className="back-arrow" 
+      className="back-button" 
       onClick={() => navigate(-1)}
       style={{ cursor: "pointer" }}
     >
       <IoMdArrowRoundBack/>
+      
     </span>
-    <h1>Your Cart</h1>
-  </div>
+      <h1 className="nav-title">Your Cart</h1>
+  {/* </div> */}
 </header>
 
 

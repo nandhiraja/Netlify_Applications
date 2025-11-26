@@ -47,6 +47,7 @@
 .menu-title {
   position: absolute;
   left: 50%;
+  font-family: var(--primary-theme-header);
   transform: translateX(-50%);
   font-size: 2.5rem;
   font-family: Georgia, serif;
@@ -185,6 +186,8 @@
   }
   
   .menu-title {
+    font-family: var(--primary-theme-header);
+
     font-size: 2rem;
   }
   

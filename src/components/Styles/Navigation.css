@@ -282,8 +282,11 @@
   line-height: 1.5;
   opacity: 0.85;
   letter-spacing: 0.2px;
-  max-width: 70%;
+  max-width: 80%;
   margin: 0 auto;
+  border-top:1px solid white; 
+  /* border-right:1px solid white; 
+  border-left:1px solid white;  */
 }
 
 
