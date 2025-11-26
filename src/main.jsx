@@ -16,7 +16,9 @@ import { Outlet } from 'react-router-dom';
 
 const Layout = () => (
   <CartProvider>
+    <div className="page-border-wrapper">
     <Outlet />
+    </div>
   </CartProvider>
 );
 

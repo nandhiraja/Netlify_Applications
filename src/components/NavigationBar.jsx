@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from './CartContext';
 import { IoMdArrowRoundBack } from "react-icons/io";
 
-const Navigation = ({ categoryName, orderType }) => {
+const Navigation = ({ categoryName, orderType ,description}) => {
   const navigate = useNavigate();
   const { cart } = useCart();
 
@@ -22,9 +22,9 @@ const Navigation = ({ categoryName, orderType }) => {
   return (
     <nav className="navigation-bar">
       <div className="nav-container">
-        <button className="nav-btn home-btn" onClick={handleBack}>
+        <button className="nav-btn back-button" onClick={handleBack}>
           <IoMdArrowRoundBack size={20} />
-          <span className="nav-label">Menu</span>
+          {/* <span className="nav-label">Menu</span> */}
         </button>
         
         <div className="nav-center">
@@ -34,15 +34,19 @@ const Navigation = ({ categoryName, orderType }) => {
           )}
         </div>
         
-        <button className="nav-btn cart-btn" onClick={handleCartClick}>
+        <button className="nav-btn back-button" onClick={handleCartClick}>
           <div className="cart-icon-wrapper">
             <ShoppingCart size={20} />
             {totalItems > 0 && (
               <span className="cart-badge">{totalItems}</span>
             )}
           </div>
-          <span className="nav-label">Cart</span>
+          {/* <span className="nav-label">Cart</span> */}
+
         </button>
+        <div className='description-nav'>
+          {description}
+        </div>
       </div>
     </nav>
   );

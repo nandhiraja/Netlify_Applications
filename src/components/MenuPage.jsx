@@ -10,17 +10,15 @@ const MenuPage = () => {
   const location = useLocation();
   const orderType = location.state?.orderType || 'dine-in';
   
-  const [allMenuData, setAllMenuData] = useState(null); // Store entire response
+  const [allMenuData, setAllMenuData] = useState(null);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const handleCardClick = (category) => {
-    // Filter items for this category
     const categoryItems = allMenuData.items.filter(
       item => item.categoryId === category.categoryId
     );
     
-    // Navigate with all necessary data
     navigate(`/item/${category.categoryId}`, { 
       state: { 
         category,
@@ -42,21 +40,19 @@ const MenuPage = () => {
     console.log("Fetching category data from backend...", BASE_URL);
     
     fetch(`${BASE_URL}/catalog/?channel=Palas Kiosk`, {
-     headers: {
-       "ngrok-skip-browser-warning": "true"
-     }
-      })
+      headers: {
+        "ngrok-skip-browser-warning": "true"
+      }
+    })
       .then(async (response) => {
         let raw = await response.text();
-        console.log("Status:", response.status ,raw);
+        console.log("Status:", response.status, raw);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
   
         const data = await JSON.parse(raw);
-        
-        // Store all data
         setAllMenuData(data);
         setCategories(data.categories);
         setLoading(false);
@@ -78,12 +74,9 @@ const MenuPage = () => {
       {/* Header Section */}
       <div className="menu-header">
         <button className="back-button" onClick={handleBackClick}>
-          <IoMdArrowRoundBack/>
+          <IoMdArrowRoundBack />
         </button>
         <h1 className="menu-title">Menu</h1>
-        <div className="order-type-badge">
-          {orderType === 'dine-in' ? 'Dine In' : 'Take Away'}
-        </div>
       </div>
 
       {/* Menu Grid */}
@@ -94,30 +87,22 @@ const MenuPage = () => {
             className="menu-card"
             onClick={() => handleCardClick(category)}
           >
-            <div className="card-image-wrapper">
+            <div className="card-inner">
               <img 
-                src={`./Menu/${category.name}.jpg` ||  './placeholder_dosa.jpg'}
+                src={`./Menu/${category.name}.jpg` || './placeholder_dosa.jpg'}
                 alt={category.name}
                 className="card-image"
                 onError={(e) => {
-                  e.target.src = './placeholder.jpg'; // Fallback image
+                  e.target.src = './placeholder.jpg';
                 }}
               />
-              <div className="card-overlay"></div>
-            </div>
-            <div className="card-content">
-              <h3 className="card-title">{category.name}</h3>
+              <div className="card-label">
+                <span className="card-title">{category.name}</span>
+              </div>
             </div>
           </div>
         ))}
       </div>
-
-      {/* <footer className="menu-footer">
-        <div className="footer-content">
-          <p className="footer-text">Scroll to explore more delicious items</p>
-          <div className="footer-decorative-line"></div>
-        </div>
-      </footer> */}
     </div>
   );
 };

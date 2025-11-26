@@ -82,6 +82,11 @@ const MenuSection = () => {
       {/* Navigation with category name and order type */}
       <Navigation 
         categoryName={category?.name} 
+        description = {`OG Benne has a recipe
+                          from the small town of Davangere in Karnataka.
+                          This will be a soft and slightly crunchy dose
+                          served with grated dry coconut chutney.
+                          Its available in below.`}
         orderType={orderTypeDisplay}
       />
 

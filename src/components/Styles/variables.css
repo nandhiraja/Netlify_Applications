@@ -11,7 +11,9 @@
   --gold-dark: #2d6326;
   --gold-light: #5A9B6E;
   --gold-accent: #df5e08;
+    --gold-accent-light: #f7b425;
 
+  --overall-border-color :rgb(240, 144, 35);
   
   /* Earthy Neutrals */
   --earth-dark: #ec9a2f;
