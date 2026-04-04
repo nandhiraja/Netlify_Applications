@@ -1,93 +1,114 @@
+import { generateBackendBill, generateDynamicBackendKOT, getCounterNameForCategory } from './backendPrintTemplates';
 
-
-import { generateRestaruentBill, generateFoodKOT, generateCoffeeKOT } from './printBillTemplates';
-
+// Global queue to ensure iframes process sequentially
+let iframePrintQueue = Promise.resolve();
 
 function printInHiddenIframe(htmlContent, documentTitle) {
-    // Create hidden iframe
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    iframe.style.visibility = 'hidden';
+    iframePrintQueue = iframePrintQueue.then(() => new Promise((resolve) => {
+        // Create hidden iframe
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        iframe.style.visibility = 'hidden';
 
-    document.body.appendChild(iframe);
+        document.body.appendChild(iframe);
 
-    // Write content to iframe
-    const iframeDoc = iframe.contentWindow.document;
-    iframeDoc.open();
-    iframeDoc.write(htmlContent);
-    iframeDoc.close();
+        // Write content to iframe
+        const iframeDoc = iframe.contentWindow.document;
+        iframeDoc.open();
+        iframeDoc.write(htmlContent);
+        iframeDoc.close();
 
-    // Set document title for PDF save filename
-    iframeDoc.title = documentTitle;
+        // Set document title for PDF save filename
+        iframeDoc.title = documentTitle;
 
-    // Wait for content to load then print
-    iframe.onload = () => {
-        setTimeout(() => {
-            try {
-                iframe.contentWindow.focus();
-                iframe.contentWindow.print();
+        let resolved = false;
 
-                // Remove iframe after a delay
-                setTimeout(() => {
+        const cleanupAndResolve = () => {
+            if (!resolved) {
+                resolved = true;
+                if (document.body.contains(iframe)) {
                     document.body.removeChild(iframe);
-                }, 1000);
-            } catch (error) {
-                console.error('Print error:', error);
-                document.body.removeChild(iframe);
+                }
+                resolve();
             }
-        }, 300);
-    };
+        };
+
+        // Wait for content to load then print
+        iframe.onload = () => {
+            setTimeout(() => {
+                try {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                    
+                    // Allow time for print dialog/action before queuing next
+                    setTimeout(() => {
+                        cleanupAndResolve();
+                    }, 1000);
+                } catch (error) {
+                    console.error('Print error:', error);
+                    cleanupAndResolve();
+                }
+            }, 300);
+        };
+
+        // Fallback timeout in case onload fails
+        setTimeout(cleanupAndResolve, 5000);
+    }));
 }
-
-
-
 
 
 // Generate and print bill silently
 export const silentPrintBill = (orderId, kot_code, orderDetails, orderType,storeName,ADDRESS_LINE_1,ADDRESS_LINE_2,GST_NUMBER,FSSAI_NUMBER,CIN_NUMBER) => {
-    console.log("BILL : ", orderDetails, " -- ", orderType);
-    const billHTML = generateRestaruentBill(orderId, kot_code, orderDetails, orderType,storeName,ADDRESS_LINE_1,ADDRESS_LINE_2,GST_NUMBER,FSSAI_NUMBER,CIN_NUMBER);
+    console.log("[Silent Print] BILL : ", orderType);
+    const billHTML = generateBackendBill(orderId, kot_code, orderDetails, orderType,storeName,ADDRESS_LINE_1,ADDRESS_LINE_2,GST_NUMBER,FSSAI_NUMBER,CIN_NUMBER);
     printInHiddenIframe(billHTML, `Bill-${orderId}`);
+};
+
+// Generates KOTs dynamically based on filter (Food vs Coffee separation preserved for fallback logic)
+const printGroupedFallbackKOTs = (orderId, kot_code, orderDetails, orderType, storeName, itemFilter) => {
+    const itemsToProcess = orderDetails.items.filter(itemFilter);
+    if (itemsToProcess.length === 0) return;
+
+    const groupedItems = {};
+    itemsToProcess.forEach(item => {
+        const counterName = getCounterNameForCategory(String(item.categoryId));
+        if (!groupedItems[counterName]) groupedItems[counterName] = [];
+        groupedItems[counterName].push(item);
+    });
+
+    const counterNames = Object.keys(groupedItems);
+    
+    counterNames.forEach(counterName => {
+        const items = groupedItems[counterName];
+        const kotHtml = generateDynamicBackendKOT(orderId, kot_code, orderType, storeName, counterName, items);
+        if (kotHtml) {
+            printInHiddenIframe(kotHtml, `${counterName.replace(/\s+/g,'_')}-KOT-${orderId}`);
+        }
+    });
 };
 
 // Generate and print Food KOT silently
 export const silentPrintFoodKOT = (orderId, kot_code, orderDetails ,orderType,storeName) => {
-    console.log("fOOD-KOT : ", orderType);
-    const foodKOTHTML = generateFoodKOT(orderId, kot_code, orderDetails,orderType,storeName);
-    if (foodKOTHTML) {
-        printInHiddenIframe(foodKOTHTML, `Food-KOT-${orderId}`);
-    }
+    console.log("[Silent Print] FOOD-KOTS : ", orderType);
+    // Everything that is NOT coffee (9534540)
+    printGroupedFallbackKOTs(orderId, kot_code, orderDetails, orderType, storeName, item => String(item.categoryId) !== "9534540");
 };
 
 // Generate and print Coffee KOT silently
 export const silentPrintCoffeeKOT = (orderId, kot_code, orderDetails,orderType,storeName) => {
-    console.log("COFFEE-KOT : ", orderType);
-    const coffeeKOTHTML = generateCoffeeKOT(orderId, kot_code, orderDetails,orderType,storeName);
-    if (coffeeKOTHTML) {
-        printInHiddenIframe(coffeeKOTHTML, `Coffee-KOT-${orderId}`);
-    }
+    console.log("[Silent Print] COFFEE-KOT : ", orderType);
+    // Exactly coffee
+    printGroupedFallbackKOTs(orderId, kot_code, orderDetails, orderType, storeName, item => String(item.categoryId) === "9534540");
 };
 
-
-
-
-
-
-// Print all documents silently
+// Print all documents silently (Used when 9100 completely fails)
 export const silentPrintAll = (orderId, kot_code, orderDetails, orderType, storeName,ADDRESS_LINE_1,ADDRESS_LINE_2,GST_NUMBER,FSSAI_NUMBER,CIN_NUMBER) => {
-
-    // Print bill
+    // 1. Print the generic Bill
     silentPrintBill(orderId, kot_code, orderDetails, orderType, storeName,ADDRESS_LINE_1,ADDRESS_LINE_2,GST_NUMBER,FSSAI_NUMBER,CIN_NUMBER);
-
-    // Delay to ensure sequential printing
-    setTimeout(() => {
-        silentPrintFoodKOT(orderId, kot_code, orderDetails,orderType,storeName);
-    }, 500);
-
-    setTimeout(() => {
-        silentPrintCoffeeKOT(orderId, kot_code, orderDetails,orderType,storeName);
-    }, 1000);
+    
+    // 2. Iterate through ALL items, grouping them by their dynamic counter, and queueing KOTs
+    printGroupedFallbackKOTs(orderId, kot_code, orderDetails, orderType, storeName, () => true);
 };
