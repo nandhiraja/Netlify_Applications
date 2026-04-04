@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import './Styles/TokenSuccess.css';
 import { Printer, MessageCircle } from 'lucide-react';
 import { IoLogoWhatsapp } from "react-icons/io";
-import { silentPrintBill, silentPrintFoodKOT, silentPrintCoffeeKOT } from './utils/silentPrint';
+import { silentPrintBill, silentPrintFoodKOT, silentPrintCoffeeKOT, silentPrintAll } from './utils/silentPrint';
+import { triggerBackend9101Prints } from './utils/backendPrintService';
+
 const TokenSuccess = ({
   token,
   kot_code,
@@ -205,13 +207,7 @@ const TokenSuccess = ({
 
 
         try {
-          silentPrintFoodKOT(orderId, kot_code, orderDetails,orderType,storeName);
-          setTimeout(() => {
-            silentPrintCoffeeKOT(orderId, kot_code, orderDetails,orderType,storeName);
-          }, 500);
-          setTimeout(() => {
-            silentPrintBill(orderId, kot_code, orderDetails, orderType,storeName,ADDRESS_LINE_1,ADDRESS_LINE_2,GST_NUMBER,FSSAI_NUMBER,CIN_NUMBER);
-          }, 1000);
+          silentPrintAll(orderId, kot_code, orderDetails, orderType, storeName, ADDRESS_LINE_1, ADDRESS_LINE_2, GST_NUMBER, FSSAI_NUMBER, CIN_NUMBER);
 
           console.log('[TokenSuccess] ✅ Fallback print triggered successfully');
           setPrintStatus('success');
@@ -228,6 +224,18 @@ const TokenSuccess = ({
           setPrintNotification('');
         }
       }
+
+      // --- NEW 9101 INTEGRATION ---
+      try {
+           console.log('[TokenSuccess] 🚀 Now triggering standalone 9101 print service...');
+           await triggerBackend9101Prints(
+              orderId, kot_code, orderDetails, orderType, storeName,
+              ADDRESS_LINE_1, ADDRESS_LINE_2, GST_NUMBER, FSSAI_NUMBER, CIN_NUMBER
+           );
+      } catch (newPrinterErr) {
+           console.error('[TokenSuccess] ✗ 9101 printer flow failed:', newPrinterErr);
+      }
+      // ------------------------------
     };
 
     // Trigger automatic printing after a small delay to ensure component is mounted
