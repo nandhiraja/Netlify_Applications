@@ -87,155 +87,67 @@ const TokenSuccess = ({
       console.log("storeName : ", storeName);
       console.log("orderType : ", orderType);
       try {
-       
-
         setPrintNotification('Bills are printing...');
-        console.log('[TokenSuccess] 🖨️ Starting automated parallel printing...');
+        console.log('[TokenSuccess] 🖨️ Starting automated printing via 9101...');
         setPrintStatus('printing');
 
-        // ✅ PRIMARY METHOD: Backend Print Service (Parallel)
-        const printResults = await Promise.all([
-          fetch('http://localhost:9100/print/food-kot', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId,
-              kot_code,              
-              orderDetails,
-              orderType,
-              storeName
-            })
-          }),
-          fetch('http://localhost:9100/print/coffee-kot', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId,
-              kot_code,
-              orderDetails,
-              orderType,
-              storeName
-            })
-          }),
-          fetch('http://localhost:9100/print/bill', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId,
-              kot_code,
-              orderDetails,
-              orderType,
-              storeName,
-              ADDRESS_LINE_1,
-              ADDRESS_LINE_2,
-              GST_NUMBER,
-              FSSAI_NUMBER,
-              CIN_NUMBER
-            })
-          })
-        ]);
+        /*
+        // ==========================================
+        // ❌ OLD 9100 PRINT METHOD (COMMENTED OUT)
+        // ==========================================
+        // const printResults = await Promise.all([
+        //   fetch('http://localhost:9100/print/food-kot', { ... }),
+        //   fetch('http://localhost:9100/print/coffee-kot', { ... }),
+        //   fetch('http://localhost:9100/print/bill', { ... })
+        // ]);
+        */
 
-        // Parse all responses
-        const [foodKotResult, coffeeKotResult, billResult] = await Promise.all(
-          printResults.map(res => res.json())
-        );
-
-        // Track which prints failed for fallback
-        const failedPrints = {
-          foodKot: !foodKotResult.success && !foodKotResult.skipped,
-          coffeeKot: !coffeeKotResult.success && !coffeeKotResult.skipped,
-          bill: !billResult.success
-        };
-
-        // Log results
-        console.log('[TokenSuccess] 📄 Food KOT:', foodKotResult.success ? '✓ Success' : '✗ Failed');
-        console.log('[TokenSuccess] ☕ Coffee KOT:', coffeeKotResult.success ? '✓ Success' : '✗ Failed');
-        console.log('[TokenSuccess] 🧾 Bill:', billResult.success ? '✓ Success' : '✗ Failed');
-
-        // ⚠️ FALLBACK METHOD: Browser Print (if backend failed)
-        const hasFailures = failedPrints.foodKot || failedPrints.coffeeKot || failedPrints.bill;
-
-        if (hasFailures) {
-          console.log('[TokenSuccess - Local print Failed] ⚡ Backend print failed, attempting browser print fallback...');
-
-          try {
-            // Attempt browser print for failed items
-            if (failedPrints.foodKot) {
-              console.log('[TokenSuccess - Local print Failed] 🔄 Fallback: Printing Food KOT via browser...');
-              silentPrintFoodKOT(orderId, kot_code, orderDetails,orderType,storeName);
-            }
-            if (failedPrints.coffeeKot) {
-              console.log('[TokenSuccess - Local print Failed] 🔄 Fallback: Printing Coffee KOT via browser...');
-              silentPrintCoffeeKOT(orderId, kot_code, orderDetails,orderType,storeName);
-            }
-            if (failedPrints.bill) {
-              console.log('[TokenSuccess - Local print Failed] 🔄 Fallback: Printing Bill via browser...');
-              silentPrintBill(orderId, kot_code, orderDetails, orderType,storeName,ADDRESS_LINE_1,ADDRESS_LINE_2,GST_NUMBER,FSSAI_NUMBER,CIN_NUMBER);
-            }
-
-            // Assume fallback succeeded (browser print doesn't return status)
-            console.log('[TokenSuccess] ✅ Fallback print triggered successfully');
-            setPrintStatus('success');
-            setPrintNotification('Bills printed successfully, please collect them');
-            setIsPrintSuccess(true);
-
-
-          } catch (fallbackError) {
-            console.error('[TokenSuccess] ✗ Fallback print also failed:', fallbackError);
-            // Both methods failed - show error
-            const errors = [];
-            if (failedPrints.foodKot) errors.push(`Food KOT: Backend and browser print failed`);
-            if (failedPrints.coffeeKot) errors.push(`Coffee KOT: Backend and browser print failed`);
-            if (failedPrints.bill) errors.push(`Bill: Backend and browser print failed`);
-
-            setPrintError(errors);
-            setPrintStatus('error');
-            setPrintNotification('');
-          }
-        } else {
-          // All backend prints successful
-          console.log('[TokenSuccess] ✅ All print jobs completed successfully via backend');
-          setPrintStatus('success');
-          setPrintNotification('Bills printed successfully, please collect them');
-          setIsPrintSuccess(true);
-        }
-      } catch (error) {
-        console.error('[TokenSuccess - Try fails] ✗ Backend print service connection error:', error);
-
-        // ⚠️ FALLBACK: Try browser print when backend is unreachable
-        console.log('[TokenSuccess - Try fails] ⚡ Backend unreachable, attempting browser print fallback...');
-
-
+        // ✅ PRIMARY METHOD: STANDALONE 9101 PRINT SERVICE
+        let is9101Success = false;
         try {
-          silentPrintAll(orderId, kot_code, orderDetails, orderType, storeName, ADDRESS_LINE_1, ADDRESS_LINE_2, GST_NUMBER, FSSAI_NUMBER, CIN_NUMBER);
-
-          console.log('[TokenSuccess] ✅ Fallback print triggered successfully');
-          setPrintStatus('success');
-          setPrintNotification('Bills printed successfully, please collect them');
-          setIsPrintSuccess(true);
-        } catch (fallbackError) {
-          console.error('[TokenSuccess] ✗ Both backend and browser print failed:', fallbackError);
-          setPrintError([
-            'Could not connect to print service',
-            'Browser print fallback also failed',
-            `Details: ${error.message}`
-          ]);
-          setPrintStatus('error');
-          setPrintNotification('');
-        }
-      }
-
-      // --- NEW 9101 INTEGRATION ---
-      try {
-           console.log('[TokenSuccess] 🚀 Now triggering standalone 9101 print service...');
-           await triggerBackend9101Prints(
+           const result = await triggerBackend9101Prints(
               orderId, kot_code, orderDetails, orderType, storeName,
               ADDRESS_LINE_1, ADDRESS_LINE_2, GST_NUMBER, FSSAI_NUMBER, CIN_NUMBER
            );
-      } catch (newPrinterErr) {
+           
+           if (result && result.success) {
+               console.log('[TokenSuccess] ✅ All print jobs completed successfully via 9101 backend');
+               setPrintStatus('success');
+               setPrintNotification('Bills printed successfully, please collect them');
+               setIsPrintSuccess(true);
+               is9101Success = true;
+           } else {
+               throw new Error(result?.errors?.join(', ') || 'Unknown print error from 9101');
+           }
+        } catch (newPrinterErr) {
            console.error('[TokenSuccess] ✗ 9101 printer flow failed:', newPrinterErr);
+        }
+
+        // ⚠️ FALLBACK METHOD: Browser Print (if 9101 failed)
+        if (!is9101Success) {
+           console.log('[TokenSuccess - Local print Failed] ⚡ Backend 9101 print failed, attempting browser print fallback...');
+           try {
+             // 9101 doesn't return partial success easily, so we fallback and print all
+             silentPrintAll(orderId, kot_code, orderDetails, orderType, storeName, ADDRESS_LINE_1, ADDRESS_LINE_2, GST_NUMBER, FSSAI_NUMBER, CIN_NUMBER);
+
+             console.log('[TokenSuccess] ✅ Fallback print triggered successfully');
+             setPrintStatus('success');
+             setPrintNotification('Bills printed successfully, please collect them');
+             setIsPrintSuccess(true);
+           } catch (fallbackError) {
+             console.error('[TokenSuccess] ✗ Both backend and browser print failed:', fallbackError);
+             setPrintError([
+               'Could not connect to print service',
+               'Browser print fallback also failed',
+               `Details: ${fallbackError.message}`
+             ]);
+             setPrintStatus('error');
+             setPrintNotification('');
+           }
+        }
+      } catch (error) {
+        console.error('[TokenSuccess] Unexpected error in automated printing:', error);
       }
-      // ------------------------------
     };
 
     // Trigger automatic printing after a small delay to ensure component is mounted

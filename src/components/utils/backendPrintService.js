@@ -39,6 +39,9 @@ export const triggerBackend9101Prints = async (
 ) => {
     console.log('[Backend 9101 Print] Starting new standalone printer flow (9101)...');
     
+    let allSuccess = true;
+    let errors = [];
+
     // 1. Generate and Send Bill
     try {
         const billHtml = generateBackendBill(
@@ -47,9 +50,15 @@ export const triggerBackend9101Prints = async (
         );
         
         console.log('[Backend 9101 Print] Sending Bill...');
-        await sendTo9101Printer(billHtml, `Bill_${orderId}`);
+        const result = await sendTo9101Printer(billHtml, `Bill_${orderId}`);
+        if (!result || !result.success) {
+            allSuccess = false;
+            errors.push('Bill Print Failed');
+        }
     } catch(err) {
         console.error('[Backend 9101 Print] Error generating/sending bill:', err);
+        allSuccess = false;
+        errors.push(`Bill Error: ${err.message}`);
     }
     
     // 2. Group items by counter name
@@ -90,11 +99,18 @@ export const triggerBackend9101Prints = async (
                 console.log(`[Backend 9101 Print] Sending KOT for ${counterName}...`);
                 const result = await sendTo9101Printer(kotHtml, `${counterName.replace(/\s+/g, '_')}_KOT_${orderId}`);
                 console.log(`[Backend 9101 Print] Result for ${counterName}:`, result);
+                if (!result || !result.success) {
+                    allSuccess = false;
+                    errors.push(`${counterName} KOT Print Failed`);
+                }
             }
         } catch(err) {
             console.error(`[Backend 9101 Print] Error sending KOT for ${counterName}:`, err);
+            allSuccess = false;
+            errors.push(`${counterName} KOT Error: ${err.message}`);
         }
     }
     
     console.log('[Backend 9101 Print] Finished all 9101 print jobs');
+    return { success: allSuccess, errors: errors };
 };
