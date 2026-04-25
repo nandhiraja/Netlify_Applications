@@ -1,14 +1,10 @@
 // Mapping category IDs to specific counter names.
-// This allows easy addition or removal of new KOT stations dynamically.
+// Only these get dedicated stations; all other categories → KITCHEN COUNTER (fallback in getCounterNameForCategory).
 export const KOT_CATEGORY_CONFIG = {
-  "9534536": "IDLI COUNTER",
-  "9534539": "SNACKS COUNTER",
-  "9534538": "DOSE COUNTER",
-  "9534537": "DOSE COUNTER",
+  "9534538": "DOSA COUNTER",
+  "9534537": "DOSA COUNTER",
   "9534540": "COFFEE COUNTER",
-  "9534541": "RICE COUNTER",
-  "9593393": "EXTRAS COUNTER",
-  "9593400": "MERCHANDISE COUNTER"
+  "9593400": "MERCHANDISE COUNTER",
 };
 
 export const getCounterNameForCategory = (categoryId) => {
