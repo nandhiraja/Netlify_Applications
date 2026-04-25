@@ -7,7 +7,9 @@ import { useCart } from './CartContext';
 import TokenSuccess from './TokenSuccess';
 import { IoMdArrowRoundBack } from "react-icons/io";
 
-const BASE_URL = import.meta.env.VITE_Base_url;
+import { getKioskBaseUrl, defaultFetchHeaders } from '../utils/kioskApi';
+
+const BASE_URL = getKioskBaseUrl();
 
 const PaymentPage = () => {
   const location = useLocation();
@@ -90,17 +92,8 @@ const PaymentPage = () => {
     return config ? JSON.parse(config) : { store_id: 'default' };
   };
 
-  // Check if store configuration exists, redirect to config if not
-  useEffect(() => {
-    const config = localStorage.getItem('kiosk_config');
-    if (!config) {
-      alert('Please configure your EDC machine first');
-      navigate('/config');
-    }
-  }, [navigate]);
-
-  // Convert amount to paise (INR * 100)
-  const amountInPaise = Math.round(totalAmount * 100).toString();
+  // Amount in paise (integer) per payments API
+  const amountInPaise = Math.round(Number(totalAmount) * 100);
 
   // ============================================
   // QR CODE PAYMENT HANDLERS
@@ -115,11 +108,14 @@ const PaymentPage = () => {
 
       const response = await fetch(`${BASE_URL}/payments/qr/init`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...defaultFetchHeaders(),
+        },
         body: JSON.stringify({
           order_id: orderId,
           amount_paise: amountInPaise,
-          terminal_id: config.terminal_id
+          ...(config.terminal_id ? { terminal_id: config.terminal_id } : {}),
         })
       });
 
@@ -158,7 +154,7 @@ const PaymentPage = () => {
 
       try {
         const response = await fetch(`${BASE_URL}/payments/qr/status/${orderId}`, {
-          headers: { "ngrok-skip-browser-warning": "true" }
+          headers: { ...defaultFetchHeaders() },
         });
 
         if (!response.ok) throw new Error('Failed to check status');
@@ -201,7 +197,7 @@ const PaymentPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          "ngrok-skip-browser-warning": "true"
+          ...defaultFetchHeaders(),
         },
         body: JSON.stringify({
           order_id: orderId,
@@ -218,8 +214,6 @@ const PaymentPage = () => {
       setTimeRemaining(100);
       setTimerActive(true);
 
-      // Trigger mock payment then start polling
-      // await triggerMockPayment();                   // mock pay trigger shutdown
       startEDCStatusPolling();
 
     } catch (error) {
@@ -228,29 +222,6 @@ const PaymentPage = () => {
       setLoadingEDC(false);
     } finally {
       setLoadingEDC(false);
-    }
-  };
-
-  const triggerMockPayment = async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/payments/edc/mock-trigger`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true"
-        },
-        body: JSON.stringify({ order_id: orderId })
-      });
-
-      if (!response.ok) throw new Error('Failed to trigger mock payment');
-
-      // Wait for PhonePe processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-    } catch (error) {
-      console.error("Mock Payment Error:", error);
-      setError('Failed to process payment. Please try again.');
-      throw error;
     }
   };
 
@@ -271,7 +242,7 @@ const PaymentPage = () => {
 
       try {
         const response = await fetch(`${BASE_URL}/payments/edc/status/${orderId}`, {
-          headers: { "ngrok-skip-browser-warning": "true" }
+          headers: { ...defaultFetchHeaders() },
         });
 
         if (!response.ok) throw new Error('Failed to check status');
@@ -320,7 +291,7 @@ const PaymentPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          "ngrok-skip-browser-warning": "true"
+          ...defaultFetchHeaders(),
         },
         body: JSON.stringify({
           order_id: orderId,
@@ -635,7 +606,7 @@ const PaymentPage = () => {
                 </div>
                 <p className="qr-instruction">Scan this QR code with any UPI app</p>
                 <div className="transaction-details">
-                  <p><strong>Amount:</strong> ₹{(parseInt(amountInPaise) / 100).toFixed(2)}</p>
+                  <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
                   <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
                 </div>
 
@@ -694,7 +665,7 @@ const PaymentPage = () => {
                 <div className="edc-info">
                   <p className="edc-instruction">Please insert or tap your card on the EDC device</p>
                   <div className="transaction-details">
-                    <p><strong>Amount:</strong> ₹{(parseInt(amountInPaise) / 100).toFixed(2)}</p>
+                    <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
                     <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
                   </div>
                 </div>
@@ -775,7 +746,7 @@ const PaymentPage = () => {
                     </button>
                   </div>
                   <div className="transaction-details">
-                    <p><strong>Amount:</strong> ₹{(parseInt(amountInPaise) / 100).toFixed(2)}</p>
+                    <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
                     <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
                   </div>
                 </div>
