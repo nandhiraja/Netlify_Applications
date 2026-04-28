@@ -16,10 +16,25 @@ import PrintCoffeeKOTPage from './components/PrintCoffeeKOTPage';
 
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { getStoreIdForHeader } from './utils/kioskApi';
+
+/** Routes that do not require `kiosk_config` with a store id (see API.md X-Store-Id). */
+function routeAllowsMissingStore(pathname) {
+  if (pathname === '/' || pathname === '/config') return true;
+  if (pathname.startsWith('/print/')) return true;
+  return false;
+}
 
 const Layout = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (routeAllowsMissingStore(location.pathname)) return;
+    if (!getStoreIdForHeader()) {
+      navigate('/config', { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   useEffect(() => {
     let timeoutId;

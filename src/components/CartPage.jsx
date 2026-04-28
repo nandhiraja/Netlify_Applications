@@ -4,8 +4,13 @@ import './Styles/CartPage.css';
 import { useCart } from './CartContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { IoMdArrowRoundBack } from "react-icons/io";
+import {
+  getKioskBaseUrl,
+  getCatalogChannel,
+  storeScopedHeaders,
+} from '../utils/kioskApi';
 
-const BASE_URL = import.meta.env.VITE_Base_url;
+const BASE_URL = getKioskBaseUrl();
 // just for verification
 const others = [   
   "1302832751",
@@ -30,7 +35,7 @@ const EXCLUDED_TAKEAWAY_ITEM_IDS = [
 
 function CartPage() {
   const navigate = useNavigate();
-  const { cart, removeItem, updateQuantity } = useCart();
+  const { cart, removeItem, updateQuantity, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { state } = useLocation();
@@ -128,8 +133,8 @@ const handleProceedToPayment = async () => {
 
   // Prepare order payload exactly as per API spec
   const orderPayload = {
-    channel: "Palas Kiosk",
-    order_type : orderTypePayload,
+    channel: getCatalogChannel(),
+    order_type: orderTypePayload,
     items: cart.items.map(item => {
       const payloadItem = {
         item_skuid: item.skuCode || item.itemId.toString(),
@@ -160,9 +165,7 @@ const handleProceedToPayment = async () => {
   try {
     const response = await fetch(`${BASE_URL}/orders/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: storeScopedHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(orderPayload)
     });
 
