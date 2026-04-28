@@ -278,6 +278,12 @@ export const generateBackendBill = (
             <span>Total:</span>
             <span>Rs ${orderDetails.subtotal.toFixed(2)}</span>
           </div>
+          ${(Number(orderDetails.takeawayChargeWithTax) || 0) > 0 ? `
+          <div class="total-row">
+            <span>Takeaway Charges (Incl. Tax)</span>
+            <span>+${(Number(orderDetails.takeawayChargeWithTax) || 0).toFixed(2)}</span>
+          </div>
+          ` : ''}
           <div class="total-row">
             <span>CGST 2.5%</span>
             <span>+${(orderDetails.tax / 2).toFixed(2)}</span>
