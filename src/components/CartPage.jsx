@@ -43,8 +43,10 @@ function CartPage() {
 
   console.log("state in cartpage : ",state)
 
- const {  
-    orderType = 'Dine In'
+  // Read from state as fallback, but prefer localStorage for consistency
+  const savedOrderType = localStorage.getItem('orderType');
+  const {  
+    orderType = savedOrderType || 'dine-in'
   } = state || {};
 
 
@@ -86,7 +88,7 @@ function CartPage() {
     };
   }, { subtotal: 0, tax: 0 });
 
-  const orderTypePayload = orderType === 'Dine In' ? 'DINEIN' : 'TAKEAWAY';
+  const orderTypePayload = (orderType === 'Dine In' || orderType === 'dine-in') ? 'DINEIN' : 'TAKEAWAY';
 
   // Calculate Takeaway Charges
   let takeawayChargesWithoutTax = 0;
