@@ -13,8 +13,8 @@
  *   Returns false in a desktop browser, so existing fallbacks still work.
  */
 
-// Coffee Category ID (must match printBillTemplates.js)
-const COFFEE_CATEGORY_ID = "6868ca5dc29c8ed4d3c98dd8";
+// Coffee Category ID (must match printBillTemplates.js and backend)
+const COFFEE_CATEGORY_ID = "9534540";
 
 // --------------------------------------------------
 // ESC/POS COMMAND CONSTANTS

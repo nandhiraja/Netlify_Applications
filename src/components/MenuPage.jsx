@@ -14,7 +14,8 @@ const BASE_URL = getKioskBaseUrl();
 const MenuPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const orderType = location.state?.orderType || 'dine-in';
+  const savedOrderType = localStorage.getItem('orderType');
+  const orderType = location.state?.orderType || savedOrderType || 'dine-in';
 
   const [allMenuData, setAllMenuData] = useState(null);
   const [categories, setCategories] = useState([]);
