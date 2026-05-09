@@ -144,7 +144,7 @@ function buildBillEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, orderTyp
   // ---- ITEMS ----
   (orderDetails.items || []).forEach(item => {
     let basePrice = item.price || 0;
-    
+
     if (item.selectedCustomizations) {
         let addonsTotal = 0;
         if (item.selectedCustomizations.addons) {
@@ -152,7 +152,7 @@ function buildBillEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, orderTyp
                  addonsTotal += parseFloat(a.price || 0);
              });
         }
-        
+
         if (item.selectedCustomizations.variation) {
              basePrice = parseFloat(item.selectedCustomizations.variation.price || 0) + addonsTotal;
         } else {
@@ -166,7 +166,7 @@ function buildBillEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, orderTyp
     const qty = padEnd(String(item.quantity), 4);
     const amt = padStart(`Rs ${itemTotal}`, 14);
     r += nameLine + qty + amt + '\n';
-    
+
     // If item has customizations, print them indented
     if (item.selectedCustomizations) {
         if (item.selectedCustomizations.variation) {
@@ -184,7 +184,7 @@ function buildBillEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, orderTyp
 
   // ---- TOTALS ----
   r += twoCol('Total:', `Rs ${orderDetails.subtotal.toFixed(2)}`);
-  
+
   if ((Number(orderDetails.takeawayChargeWithTax) || 0) > 0) {
     r += twoCol('Takeaway Charges (Incl. Tax):', `+${(Number(orderDetails.takeawayChargeWithTax) || 0).toFixed(2)}`);
   }
@@ -220,7 +220,7 @@ function buildBillEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, orderTyp
  * Build ESC/POS string for Food KOT (non-coffee items)
  * Returns null if no food items exist.
  */
-function buildFoodKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, storeName) {
+function buildFoodKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, orderType, storeName) {
   const foodItems = (orderDetails.items || []).filter(
     item => item.categoryId !== COFFEE_CATEGORY_ID
   );
@@ -248,7 +248,7 @@ function buildFoodKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, store
 
   // ---- ORDER INFO ----
   r += CMD.ALIGN_LEFT;
-  r += `BILL TYPE : ${orderDetails.billType || 'DINE IN'}\n`;
+  r += `BILL TYPE : ${orderType || orderDetails.billType || 'DINE IN'}\n`;
   r += `BILL NO   : KTR-${String(orderId).slice(4, 10)}\n`;
   r += `DATE/TIME : ${getDateTime()}\n`;
   r += `KIOSK     : ${orderDetails.kiosk || 'KTR1'}\n`;
@@ -289,7 +289,7 @@ function buildFoodKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, store
  * Build ESC/POS string for Coffee KOT (coffee items only)
  * Returns null if no coffee items exist.
  */
-function buildCoffeeKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, storeName) {
+function buildCoffeeKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, orderType, storeName) {
   const coffeeItems = (orderDetails.items || []).filter(
     item => item.categoryId === COFFEE_CATEGORY_ID
   );
@@ -318,7 +318,7 @@ function buildCoffeeKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, sto
 
   // ---- ORDER INFO ----
   r += CMD.ALIGN_LEFT;
-  r += `BILL TYPE : ${orderDetails.billType || 'DINE IN'}\n`;
+  r += `BILL TYPE : ${orderType || orderDetails.billType || 'DINE IN'}\n`;
   r += `BILL NO   : KTR-${String(orderId).slice(4, 10)}\n`;
   r += `DATE/TIME : ${getDateTime()}\n`;
   r += `KIOSK     : ${orderDetails.kiosk || 'KTR1'}\n`;
@@ -372,8 +372,8 @@ export const androidPrintBill = (orderId, kot_code, KDSInvoiceId, orderDetails, 
  * Print Food KOT via Android USB bridge.
  * Returns false if no food items (skipped).
  */
-export const androidPrintFoodKOT = (orderId, kot_code, KDSInvoiceId, orderDetails, storeName) => {
-  const escPos = buildFoodKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, storeName);
+export const androidPrintFoodKOT = (orderId, kot_code, KDSInvoiceId, orderDetails, orderType, storeName) => {
+  const escPos = buildFoodKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, orderType, storeName);
   if (!escPos) {
     console.log('[AndroidPrint] ⚠️ No food items - Food KOT skipped');
     return false;
@@ -387,8 +387,8 @@ export const androidPrintFoodKOT = (orderId, kot_code, KDSInvoiceId, orderDetail
  * Print Coffee KOT via Android USB bridge.
  * Returns false if no coffee items (skipped).
  */
-export const androidPrintCoffeeKOT = (orderId, kot_code, KDSInvoiceId, orderDetails, storeName) => {
-  const escPos = buildCoffeeKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, storeName);
+export const androidPrintCoffeeKOT = (orderId, kot_code, KDSInvoiceId, orderDetails, orderType, storeName) => {
+  const escPos = buildCoffeeKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, orderType, storeName);
   if (!escPos) {
     console.log('[AndroidPrint] ⚠️ No coffee items - Coffee KOT skipped');
     return false;
@@ -410,11 +410,11 @@ export const androidPrintAll = (orderId, kot_code, KDSInvoiceId, orderDetails, o
 
   // Food KOT — after 350ms
   setTimeout(() => {
-    androidPrintFoodKOT(orderId, kot_code, KDSInvoiceId, orderDetails, storeName);
+    androidPrintFoodKOT(orderId, kot_code, KDSInvoiceId, orderDetails, orderType, storeName);
   }, 350);
 
   // Coffee KOT — after 700ms
   setTimeout(() => {
-    androidPrintCoffeeKOT(orderId, kot_code, KDSInvoiceId, orderDetails, storeName);
+    androidPrintCoffeeKOT(orderId, kot_code, KDSInvoiceId, orderDetails, orderType, storeName);
   }, 700);
 };
