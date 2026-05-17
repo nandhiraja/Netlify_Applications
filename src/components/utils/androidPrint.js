@@ -241,7 +241,7 @@ function buildFoodKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, order
   // ---- TOKEN NUMBER (large) ----
   r += CMD.ALIGN_CENTER;
   r += CMD.DOUBLE_BOTH;
-  r += `${String(kot_code).slice(4)}\n`;
+  r += `${kot_code ? String(kot_code).slice(4) : 'N/A'}\n`;
   r += CMD.NORMAL_TEXT;
   r += `KOT: ${kot_code}\n`;
   r += '----------------------------------------\n';
@@ -249,7 +249,7 @@ function buildFoodKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, order
   // ---- ORDER INFO ----
   r += CMD.ALIGN_LEFT;
   r += `BILL TYPE : ${orderType || orderDetails.billType || 'DINE IN'}\n`;
-  r += `BILL NO   : KTR-${String(orderId).slice(4, 10)}\n`;
+  r += `BILL NO   : KTR-${orderId ? String(orderId).slice(4, 10) : 'N/A'}\n`;
   r += `DATE/TIME : ${getDateTime()}\n`;
   r += `KIOSK     : ${orderDetails.kiosk || 'KTR1'}\n`;
   r += '----------------------------------------\n';
@@ -311,7 +311,7 @@ function buildCoffeeKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, ord
   // ---- TOKEN NUMBER (large) ----
   r += CMD.ALIGN_CENTER;
   r += CMD.DOUBLE_BOTH;
-  r += `${String(kot_code).slice(4)}\n`;
+  r += `${kot_code ? String(kot_code).slice(4) : 'N/A'}\n`;
   r += CMD.NORMAL_TEXT;
   r += `KOT: ${kot_code}\n`;
   r += '----------------------------------------\n';
@@ -319,7 +319,7 @@ function buildCoffeeKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, ord
   // ---- ORDER INFO ----
   r += CMD.ALIGN_LEFT;
   r += `BILL TYPE : ${orderType || orderDetails.billType || 'DINE IN'}\n`;
-  r += `BILL NO   : KTR-${String(orderId).slice(4, 10)}\n`;
+  r += `BILL NO   : KTR-${orderId ? String(orderId).slice(4, 10) : 'N/A'}\n`;
   r += `DATE/TIME : ${getDateTime()}\n`;
   r += `KIOSK     : ${orderDetails.kiosk || 'KTR1'}\n`;
   r += '----------------------------------------\n';

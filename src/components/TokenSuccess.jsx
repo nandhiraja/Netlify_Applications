@@ -248,7 +248,7 @@ const TokenSuccess = ({
 
             <div className="token-display-box">
               <img className="token-image-ktr" src="/Bill-KTR-logo.png" alt="KTR-logo" />
-              <div className="token-number">{token.slice(4)}</div>
+              <div className="token-number">{token ? token.slice(4) : 'N/A'}</div>
             </div>
 
             <p className="token-instructions">
