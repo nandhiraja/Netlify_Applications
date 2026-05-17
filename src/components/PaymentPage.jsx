@@ -17,9 +17,10 @@ const PaymentPage = () => {
   const { clearCart } = useCart();
 
   // Extract order data from location state
-  const { kot_code, orderId, totalAmount, orderDetails } = location.state || {};
+  const { payment_status, orderId, totalAmount, orderDetails } = location.state || {};
 
   // State management
+  const [kotCode, setKotCode] = useState(null);
   const [showTokenPage, setShowTokenPage] = useState(false);
   const [KDSInvoiceId, setKDSInvoiceId] = useState(null);
   const [selectedMethod, setSelectedMethod] = useState(null);
@@ -165,6 +166,7 @@ const PaymentPage = () => {
           setPaymentStatus('SUCCESS');
           setTransactionDetails(result);
           setKDSInvoiceId(result.kds_invoice_id);
+          if (result.kot_code) setKotCode(result.kot_code);
           clearCart();
           localStorage.removeItem('restaurantCart');
           clearInterval(pollingRef.current);
@@ -253,6 +255,7 @@ const PaymentPage = () => {
           setPaymentStatus('SUCCESS');
           setTransactionDetails(result);
           setKDSInvoiceId(result.kds_invoice_id);
+          if (result.kot_code) setKotCode(result.kot_code);
           clearCart();
           localStorage.removeItem('restaurantCart');
           clearInterval(pollingRef.current);
@@ -309,6 +312,7 @@ const PaymentPage = () => {
         setPaymentStatus('SUCCESS');
         setTransactionDetails(result);
         setKDSInvoiceId(result.kds_invoice_id);
+        if (result.kot_code) setKotCode(result.kot_code);
         setCashData(result);
         setTimerActive(false);
         clearCart();
@@ -368,7 +372,7 @@ const PaymentPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId,
-          kot_code,
+          kot_code: kotCode,
           KDSInvoiceId,
           orderDetails,
           orderType,
@@ -394,7 +398,7 @@ const PaymentPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId,
-          kot_code,
+          kot_code: kotCode,
           KDSInvoiceId,
           orderDetails
         })
@@ -421,7 +425,7 @@ const PaymentPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId,
-          kot_code,
+          kot_code: kotCode,
           KDSInvoiceId,
           orderDetails
         })
@@ -466,7 +470,7 @@ const PaymentPage = () => {
       return;
     }
 
-    const message = `*KITCHEN ORDER TICKET*\n\nOrder ID: ${kot_code}\nTransaction ID: ${transactionDetails?.transaction_id || 'N/A'}\nDate: ${new Date().toLocaleString()}\n\n*Items:*\n${orderDetails.items.map(item => `${item.itemName} x${item.quantity}`).join('\n')}\n\nSubtotal: ₹${orderDetails.subtotal.toFixed(2)}\nTax: ₹${orderDetails.tax.toFixed(2)}\nTotal: ₹${orderDetails.total.toFixed(2)}\n\nThank you!`;
+    const message = `*KITCHEN ORDER TICKET*\n\nOrder ID: ${kotCode}\nTransaction ID: ${transactionDetails?.transaction_id || 'N/A'}\nDate: ${new Date().toLocaleString()}\n\n*Items:*\n${orderDetails.items.map(item => `${item.itemName} x${item.quantity}`).join('\n')}\n\nSubtotal: ₹${orderDetails.subtotal.toFixed(2)}\nTax: ₹${orderDetails.tax.toFixed(2)}\nTotal: ₹${orderDetails.total.toFixed(2)}\n\nThank you!`;
 
     const whatsappUrl = `https://wa.me/91${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -479,8 +483,8 @@ const PaymentPage = () => {
   if (showTokenPage) {
     return (
       <TokenSuccess
-        token={kot_code}
-        kot_code={kot_code}
+        token={kotCode}
+        kot_code={kotCode}
         KDSInvoiceId={KDSInvoiceId}
         orderId={orderId}
         orderDetails={orderDetails}

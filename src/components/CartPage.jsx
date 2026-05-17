@@ -184,7 +184,7 @@ const handleProceedToPayment = async () => {
       state: { 
         KDSInvoiceId: result.kds_invoice_id,
         orderId: result.order_id,
-        kot_code: result.kot_code,
+        payment_status: result.payment_status,
         totalAmount: result.total_amount_include_tax,
         orderDetails: {
           items: cart.items,
