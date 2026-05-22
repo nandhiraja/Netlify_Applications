@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, Minus, Trash, Loader } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Minus, Trash, Loader, CheckCircle, Ticket, X } from 'lucide-react';
 import './Styles/CartPage.css';
 import { useCart } from './CartContext';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ import {
   getKioskBaseUrl,
   getCatalogChannel,
   storeScopedHeaders,
+  getStoreIdForHeader,
 } from '../utils/kioskApi';
 
 const BASE_URL = getKioskBaseUrl();
@@ -39,6 +40,25 @@ function CartPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const { state } = useLocation();
+
+  const [showCouponPrompt, setShowCouponPrompt] = useState(false);
+  const [showCouponInput, setShowCouponInput] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
+  
+  const [discountState, setDiscountState] = useState({
+    couponApplied: false,
+    discountId: null,
+    discountCode: "",
+    discountType: "",
+    discountValue: 0,
+    discountAmount: 0
+  });
+  const [couponError, setCouponError] = useState(null);
+  const [couponSuccess, setCouponSuccess] = useState(false);
+  const [isEligibleForCoupon, setIsEligibleForCoupon] = useState(false);
+  
+  const storeId = getStoreIdForHeader();
     
 
   console.log("state in cartpage : ",state)
@@ -115,6 +135,102 @@ function CartPage() {
   }
 
   const total = breakdown.subtotal + breakdown.tax + takeawayChargesWithTax;
+  const finalPayableAmount = Math.max(0, total - (discountState.discountAmount || 0));
+
+  // Clear coupon if cart total changes
+  useEffect(() => {
+    if (discountState.couponApplied) {
+      setDiscountState({
+        couponApplied: false,
+        discountId: null,
+        discountCode: "",
+        discountType: "",
+        discountValue: 0,
+        discountAmount: 0
+      });
+      setCouponCode('');
+    }
+  }, [total]);
+
+  useEffect(() => {
+    if (cart.items.length === 0 || !storeId) return;
+
+    const checkEligibleCoupons = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/discounts/eligible?store_id=${storeId}&cart_amount=${total}&application_type=COUPON`, {
+          headers: storeScopedHeaders()
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.length > 0) {
+            setIsEligibleForCoupon(true);
+            if (!discountState.couponApplied) {
+              setShowCouponPrompt(true);
+            }
+          } else {
+            setIsEligibleForCoupon(false);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching eligible coupons", err);
+      }
+    };
+    checkEligibleCoupons();
+  }, [cart.items.length, storeId, total]);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    setCouponSuccess(false);
+
+    try {
+      const response = await fetch(`${BASE_URL}/discounts/validate`, {
+        method: 'POST',
+        headers: storeScopedHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          application_type: "COUPON",
+          code: couponCode.trim(),
+          store_id: parseInt(storeId),
+          cart_amount: total
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
+        setDiscountState({
+          couponApplied: true,
+          discountId: data.discount_id,
+          discountCode: couponCode.trim(),
+          discountType: data.discount_type,
+          discountValue: data.discount_value,
+          discountAmount: data.discount_amount
+        });
+        setCouponSuccess(true);
+        setShowCouponInput(false);
+        setTimeout(() => setCouponSuccess(false), 3000);
+      } else {
+        setCouponError(data.message || 'Invalid Coupon');
+      }
+    } catch (err) {
+      setCouponError('Failed to validate coupon. Please try again.');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setDiscountState({
+      couponApplied: false,
+      discountId: null,
+      discountCode: "",
+      discountType: "",
+      discountValue: 0,
+      discountAmount: 0
+    });
+    setCouponCode('');
+  };
 
   const handleQuantityUpdate = (index, newQuantity) => {
     updateQuantity(index, newQuantity);
@@ -162,6 +278,10 @@ const handleProceedToPayment = async () => {
   takeaway_charges_with_tax: takeawayChargesWithTax,
   };
 
+  if (discountState.couponApplied && discountState.discountId) {
+    orderPayload.discount_id = discountState.discountId;
+  }
+
   console.log('Creating Order:', orderPayload);
 
   try {
@@ -193,7 +313,9 @@ const handleProceedToPayment = async () => {
           takeawayChargeWithoutTax: takeawayChargesWithoutTax,
           takeawayTax: takeawayTax,
           takeawayChargeWithTax: takeawayChargesWithTax,
-          total: totalWithTax
+          total: totalWithTax,
+          discountAmount: result.discount_amount || discountState.discountAmount,
+          discountCode: result.discount_code || discountState.discountCode,
         }
       } 
     });
@@ -215,6 +337,62 @@ const handleProceedToPayment = async () => {
 
   return (
     <div className="cart-root">
+      {showCouponPrompt && (
+        <div className="coupon-modal-overlay">
+          <div className="coupon-modal-modern">
+            <button className="coupon-modal-close" onClick={() => setShowCouponPrompt(false)}>
+              <X size={24} />
+            </button>
+            <div className="coupon-modal-icon-wrapper">
+              <Ticket size={36} className="coupon-modal-icon" />
+            </div>
+            <h2 className="coupon-modal-title">Have a Coupon?</h2>
+            <p className="coupon-modal-subtitle">You have eligible discounts. Would you like to apply one now?</p>
+            <div className="coupon-modal-actions-vertical">
+              <button className="coupon-btn-primary" onClick={() => { setShowCouponPrompt(false); setShowCouponInput(true); }}>
+                Yes, Enter Code
+              </button>
+              <button className="coupon-btn-text" onClick={() => setShowCouponPrompt(false)}>
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCouponInput && !discountState.couponApplied && (
+        <div className="coupon-modal-overlay">
+          <div className="coupon-modal-modern">
+            <button className="coupon-modal-close" onClick={() => setShowCouponInput(false)}>
+              <X size={24} />
+            </button>
+            <div className="coupon-modal-icon-wrapper">
+              <Ticket size={36} className="coupon-modal-icon" />
+            </div>
+            <h2 className="coupon-modal-title">Enter Coupon Code</h2>
+            <p className="coupon-modal-subtitle">Type your code below to claim your discount.</p>
+            
+            <div className="coupon-input-modern-group">
+              <input 
+                type="text" 
+                className="coupon-input-modern" 
+                value={couponCode} 
+                onChange={(e) => setCouponCode(e.target.value)}
+                placeholder="e.g. STORE10"
+                disabled={couponLoading}
+              />
+            </div>
+            {couponError && <div className="coupon-error-modern">{couponError}</div>}
+            
+            <div className="coupon-modal-actions-vertical" style={{ marginTop: '0.5rem' }}>
+              <button className="coupon-btn-primary" onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()}>
+                {couponLoading ? <Loader size={20} className="spinning" /> : 'Apply Discount'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="nav-header">
   {/* <div className="cart-header-content"> */}
     <span 
@@ -231,6 +409,23 @@ const handleProceedToPayment = async () => {
 
 
       <main className="cart-content">
+        {couponSuccess && (
+          <div className="coupon-success-card">
+            <CheckCircle className="coupon-success-icon" />
+            <div>
+              <div style={{ fontWeight: 'bold' }}>Coupon Applied Successfully</div>
+              <div style={{ fontSize: '0.9rem' }}>{discountState.discountCode} applied. You saved ₹{discountState.discountAmount.toFixed(2)}</div>
+            </div>
+          </div>
+        )}
+
+        {discountState.couponApplied && !couponSuccess && (
+          <div className="coupon-applied-badge">
+            <span className="coupon-applied-text">Coupon Applied: {discountState.discountCode} (-₹{discountState.discountAmount.toFixed(2)})</span>
+            <button className="coupon-remove-btn" onClick={handleRemoveCoupon}>Remove</button>
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div style={{
@@ -363,11 +558,45 @@ const handleProceedToPayment = async () => {
               <span>Total Tax:</span>
               <span>₹{(breakdown.tax + takeawayTax).toFixed(2)}</span>
             </div>
+            {discountState.couponApplied && (
+              <div className="summary-row" style={{ color: '#2e7d32', fontWeight: 'bold' }}>
+                <span>Coupon Discount ({discountState.discountCode}):</span>
+                <span>-₹{discountState.discountAmount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="summary-row total">
-              <span>Total:</span>
-              <span>₹{total.toFixed(2)}</span>
+              <span>Final Amount:</span>
+              <span>₹{finalPayableAmount.toFixed(2)}</span>
             </div>
             
+            {isEligibleForCoupon && !discountState.couponApplied && (
+              <button 
+                onClick={() => setShowCouponInput(true)}
+                style={{
+                  width: '70%',
+                  margin: '1.25rem auto 0 auto',
+                  padding: '0.875rem',
+                  background: 'rgba(212, 175, 55, 0.1)',
+                  color: 'var(--gold-dark)',
+                  border: '1.5px dashed var(--gold-dark)',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  fontSize: '1rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.2s',
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.2)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.1)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                <Ticket size={20} />
+                Apply Coupon Code
+              </button>
+            )}
+
             <button 
               className="payment-btn"
               onClick={handleProceedToPayment}

@@ -568,3 +568,218 @@
     animation: none;
   }
 }
+
+/* ============================================
+   COUPON FLOW STYLES
+   ============================================ */
+
+.coupon-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.coupon-modal-modern {
+  background: white;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  width: 90%;
+  max-width: 420px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: slideIn 0.3s ease-out forwards;
+}
+
+.coupon-modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+.coupon-modal-close:hover {
+  background: var(--neutral-200);
+  color: var(--text-primary);
+}
+
+.coupon-modal-icon-wrapper {
+  background: rgba(212, 175, 55, 0.15);
+  color: var(--gold-dark);
+  padding: 1.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.coupon-modal-title {
+  font-family: var(--font-primary);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+.coupon-modal-subtitle {
+  font-family: var(--font-secondary);
+  font-size: 1.05rem;
+  color: var(--text-secondary);
+  margin: 0 0 2rem 0;
+  line-height: 1.5;
+}
+
+.coupon-modal-actions-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  width: 100%;
+}
+
+.coupon-btn-primary {
+  width: 100%;
+  padding: 1.125rem;
+  background: var(--secondary-gradient);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.coupon-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(212, 175, 55, 0.3);
+}
+
+.coupon-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.coupon-btn-text {
+  width: 100%;
+  padding: 0.875rem;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  font-weight: 600;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.coupon-btn-text:hover {
+  color: var(--text-primary);
+}
+
+.coupon-input-modern-group {
+  width: 100%;
+  margin-bottom: 0.75rem;
+}
+
+.coupon-input-modern {
+  width: 100%;
+  padding: 1.25rem;
+  border: 2px solid var(--neutral-300);
+  border-radius: 12px;
+  font-size: 1.25rem;
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+  background: var(--bg-cream);
+}
+
+.coupon-input-modern:focus {
+  border-color: var(--gold-dark);
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
+}
+
+.coupon-input-modern::placeholder {
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: none;
+}
+
+.coupon-error-modern {
+  color: #d32f2f;
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  width: 100%;
+  text-align: center;
+}
+
+.coupon-success-card {
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: #2e7d32;
+  margin-bottom: 1rem;
+  animation: slideIn 0.3s ease;
+}
+
+.coupon-success-icon {
+  font-size: 1.5rem;
+}
+
+.coupon-applied-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #e8f5e9;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  border: 1px dashed #4caf50;
+}
+
+.coupon-applied-text {
+  color: #2e7d32;
+  font-weight: bold;
+}
+
+.coupon-remove-btn {
+  background: transparent;
+  border: none;
+  color: #d32f2f;
+  cursor: pointer;
+  font-size: 0.875rem;
+  text-decoration: underline;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

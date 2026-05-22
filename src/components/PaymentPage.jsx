@@ -544,9 +544,15 @@ const PaymentPage = () => {
               <span>Tax:</span>
               <span>₹{(orderDetails.tax + (orderDetails.takeawayTax || 0)).toFixed(2)}</span>
             </div>
+            {orderDetails.discountAmount > 0 && (
+              <div className="summary-total-row" style={{ color: '#2e7d32', fontWeight: 'bold' }}>
+                <span>Coupon Discount ({orderDetails.discountCode}):</span>
+                <span>-₹{orderDetails.discountAmount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="summary-total-row grand-total">
               <span>Total:</span>
-              <span>₹{orderDetails.total.toFixed(2)}</span>
+              <span>₹{totalAmount.toFixed(2)}</span>
             </div>
           </div>
         </div>
