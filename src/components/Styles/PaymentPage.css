@@ -226,6 +226,19 @@
   background: var(--gold-dark);
 }  
 
+.direct-pay-btn.zomato-pay {
+  background: #E23744;
+  color: white;
+}
+
+.direct-pay-btn.zomato-pay:hover:not(:disabled) {
+  background: #C8222E;
+}
+
+.direct-pay-btn.zomato-pay:disabled {
+  background: #e23744cc;
+}
+
 
 /* METHOD CONTENT */
 .method-content {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { CreditCard, QrCode, Loader, Check, Wallet } from 'lucide-react';
+import { CreditCard, QrCode, Loader, Check, Wallet, Smartphone } from 'lucide-react';
 import './Styles/PaymentPage.css';
 import { useCart } from './CartContext';
 import TokenSuccess from './TokenSuccess';
@@ -27,9 +27,11 @@ const PaymentPage = () => {
   const [expandedMethod, setExpandedMethod] = useState(null);
   const [qrData, setQrData] = useState(null);
   const [edcData, setEdcData] = useState(null);
+  const [zomatoData, setZomatoData] = useState(null);
   const [cashData, setCashData] = useState(null);
   const [loadingQR, setLoadingQR] = useState(false);
   const [loadingEDC, setLoadingEDC] = useState(false);
+  const [loadingZomato, setLoadingZomato] = useState(false);
   const [loadingCash, setLoadingCash] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('PENDING');
   const [transactionDetails, setTransactionDetails] = useState(null);
@@ -185,11 +187,18 @@ const PaymentPage = () => {
   };
 
   // ============================================
-  // EDC CARD PAYMENT HANDLERS
+  // EDC CARD & ZOMATO PAYMENT HANDLERS
   // ============================================
 
-  const handleEDCPayment = async () => {
-    setLoadingEDC(true);
+  const handleEDCPayment = async (paymentMethod = "CARD") => {
+    const isZomato = paymentMethod === "ZOMATO_DISTRICT";
+
+    if (isZomato) {
+      setLoadingZomato(true);
+    } else {
+      setLoadingEDC(true);
+    }
+    
     setError(null);
 
     try {
@@ -204,14 +213,21 @@ const PaymentPage = () => {
         body: JSON.stringify({
           order_id: orderId,
           amount_paise: amountInPaise,
-          terminal_id: config.terminal_id
+          terminal_id: config.terminal_id,
+          payment_method: paymentMethod
         })
       });
 
-      if (!response.ok) throw new Error('Failed to initialize EDC payment');
+      if (!response.ok) throw new Error(`Failed to initialize ${isZomato ? 'Zomato District' : 'EDC'} payment`);
 
       const result = await response.json();
-      setEdcData(result);
+      
+      if (isZomato) {
+        setZomatoData(result);
+      } else {
+        setEdcData(result);
+      }
+      
       setPaymentStatus('PROCESSING');
       setTimeRemaining(100);
       setTimerActive(true);
@@ -219,11 +235,19 @@ const PaymentPage = () => {
       startEDCStatusPolling();
 
     } catch (error) {
-      console.error('EDC Initialization Error:', error);
-      setError('Failed to initialize card payment. Please try again.');
-      setLoadingEDC(false);
+      console.error(`${isZomato ? 'Zomato' : 'EDC'} Initialization Error:`, error);
+      setError(`Failed to initialize ${isZomato ? 'Zomato District' : 'card'} payment. Please try again.`);
+      if (isZomato) {
+        setLoadingZomato(false);
+      } else {
+        setLoadingEDC(false);
+      }
     } finally {
-      setLoadingEDC(false);
+      if (isZomato) {
+        setLoadingZomato(false);
+      } else {
+        setLoadingEDC(false);
+      }
     }
   };
 
@@ -649,7 +673,7 @@ const PaymentPage = () => {
                   if (!edcData && !loadingEDC && !selectedMethod) {
                     setSelectedMethod('edc');
                     setExpandedMethod('edc');
-                    handleEDCPayment();
+                    handleEDCPayment("CARD");
                   }
                 }}
                 disabled={loadingEDC || edcData || (selectedMethod && selectedMethod !== 'edc')}
@@ -684,6 +708,66 @@ const PaymentPage = () => {
                   <div className="waiting-indicator">
                     <div className="spinner"></div>
                     <p>Processing card payment...</p>
+                  </div>
+                )}
+
+                <button className="cancel-payment-btn" onClick={handleCancelPayment}>
+                  Cancel Payment
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Zomato District Payment */}
+          <div className={`payment-method-card ${selectedMethod === 'zomato_district' ? 'selected' : ''} ${selectedMethod && selectedMethod !== 'zomato_district' ? 'disabled' : ''}`}>
+            <div className="method-header">
+              <div className="method-info">
+                <Smartphone size={24} />
+                {/* <span className="method-name">Zomato District</span> */}
+              </div>
+
+              <button
+                className="direct-pay-btn zomato-pay"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!zomatoData && !loadingZomato && !selectedMethod) {
+                    setSelectedMethod('zomato_district');
+                    setExpandedMethod('zomato_district');
+                    handleEDCPayment("ZOMATO_DISTRICT");
+                  }
+                }}
+                disabled={loadingZomato || zomatoData || (selectedMethod && selectedMethod !== 'zomato_district')}
+              >
+                {loadingZomato ? (
+                  <>
+                    <Loader size={18} className="spinning" />
+                    Initializing...
+                  </>
+                ) : zomatoData ? (
+                  <>
+                    <Check size={18} />
+                    Processing
+                  </>
+                ) : (
+                  'Zomato District'
+                )}
+              </button>
+            </div>
+
+            {expandedMethod === 'zomato_district' && zomatoData && (
+              <div className="method-content">
+                <div className="edc-info">
+                  <p className="edc-instruction">Please complete the Zomato District payment on the EDC device</p>
+                  <div className="transaction-details">
+                    <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
+                    <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
+                  </div>
+                </div>
+
+                {paymentStatus === 'PROCESSING' && (
+                  <div className="waiting-indicator">
+                    <div className="spinner"></div>
+                    <p>Processing Zomato payment...</p>
                   </div>
                 )}
 
