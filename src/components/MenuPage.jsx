@@ -3,12 +3,19 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import './Styles/MenuPage.css';
 import { IoMdArrowRoundBack } from "react-icons/io";
 import MenuSkeleton from './MenuSkeleton';
-const BASE_URL = import.meta.env.VITE_Base_url;
+import {
+  getKioskBaseUrl,
+  getCatalogChannel,
+  storeScopedHeaders,
+} from '../utils/kioskApi';
+
+const BASE_URL = getKioskBaseUrl();
 
 const MenuPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const orderType = location.state?.orderType || 'dine-in';
+  const savedOrderType = localStorage.getItem('orderType');
+  const orderType = location.state?.orderType || savedOrderType || 'dine-in';
 
   const [allMenuData, setAllMenuData] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -44,13 +51,15 @@ const MenuPage = () => {
 
   useEffect(() => {
     const fetchMenuData = async () => {
+      if (!BASE_URL) {
+        setError('VITE_Base_url is not set');
+        setLoading(false);
+        return;
+      }
       try {
-        console.log("Fetching category data from backend...", BASE_URL);
-
-        const response = await fetch(`${BASE_URL}/catalog/?channel=Palas Kiosk`, {
-          headers: {
-            "ngrok-skip-browser-warning": "true"
-          }
+        const channel = encodeURIComponent(getCatalogChannel());
+        const response = await fetch(`${BASE_URL}/catalog/?channel=${channel}`, {
+          headers: storeScopedHeaders(),
         });
 
         if (!response.ok) {

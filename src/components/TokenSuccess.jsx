@@ -5,6 +5,7 @@ import { Printer, MessageCircle } from 'lucide-react';
 import { IoLogoWhatsapp } from "react-icons/io";
 import { silentPrintBill, silentPrintFoodKOT, silentPrintCoffeeKOT, silentPrintAll } from './utils/silentPrint';
 import { triggerBackend9101Prints } from './utils/backendPrintService';
+import { isAndroidBridge, androidPrintAll } from './utils/androidPrint';
 
 const TokenSuccess = ({
   token,
@@ -107,6 +108,39 @@ const TokenSuccess = ({
         //   fetch('http://localhost:9100/print/bill', { ... })
         // ]);
         */
+
+        // ============================================================
+        // TIER 1: Android WebView USB Bridge (ESC/POS direct)
+        // ============================================================
+        if (isAndroidBridge()) {
+          console.log('[TokenSuccess] 🤖 Android bridge detected — using USB ESC/POS printing');
+          try {
+            androidPrintAll(
+              orderId,
+              kot_code,
+              KDSInvoiceId,
+              orderDetails,
+              orderType,
+              transactionDetails,
+              storeName,
+              ADDRESS_LINE_1,
+              ADDRESS_LINE_2,
+              GST_NUMBER,
+              FSSAI_NUMBER,
+              CIN_NUMBER
+            );
+            // Android print is fire-and-forget; assume success after dispatch
+            setPrintStatus('success');
+            setPrintNotification('Bills printed successfully, please collect them');
+            setIsPrintSuccess(true);
+          } catch (androidError) {
+            console.error('[TokenSuccess] ✗ Android bridge print error:', androidError);
+            setPrintError(['Android USB print failed: ' + androidError.message]);
+            setPrintStatus('error');
+            setPrintNotification('');
+          }
+          return; // Do not attempt network-based methods on Android
+        }
 
         // ✅ PRIMARY METHOD: STANDALONE 9101 PRINT SERVICE
         let is9101Success = false;
@@ -220,7 +254,7 @@ const TokenSuccess = ({
 
             <div className="token-display-box">
               <img className="token-image-ktr" src="/Bill-KTR-logo.png" alt="KTR-logo" />
-              <div className="token-number">{token.slice(4)}</div>
+              <div className="token-number">{token ? token.slice(4) : 'N/A'}</div>
             </div>
 
             <p className="token-instructions">

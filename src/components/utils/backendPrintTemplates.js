@@ -1,14 +1,10 @@
 // Mapping category IDs to specific counter names.
-// This allows easy addition or removal of new KOT stations dynamically.
+// Only these get dedicated stations; all other categories → KITCHEN COUNTER (fallback in getCounterNameForCategory).
 export const KOT_CATEGORY_CONFIG = {
-  "9534536": "IDLI COUNTER",
-  "9534539": "SNACKS COUNTER",
-  "9534538": "DOSE COUNTER",
-  "9534537": "DOSE COUNTER",
+  "9534538": "DOSA COUNTER",
+  "9534537": "DOSA COUNTER",
   "9534540": "COFFEE COUNTER",
-  "9534541": "RICE COUNTER",
-  "9593393": "EXTRAS COUNTER",
-  "9593400": "MERCHANDISE COUNTER"
+  "9593400": "MERCHANDISE COUNTER",
 };
 
 export const getCounterNameForCategory = (categoryId) => {
@@ -282,6 +278,12 @@ export const generateBackendBill = (
             <span>Total:</span>
             <span>Rs ${orderDetails.subtotal.toFixed(2)}</span>
           </div>
+          ${(Number(orderDetails.takeawayChargeWithTax) || 0) > 0 ? `
+          <div class="total-row">
+            <span>Takeaway Charges (Incl. Tax)</span>
+            <span>+${(Number(orderDetails.takeawayChargeWithTax) || 0).toFixed(2)}</span>
+          </div>
+          ` : ''}
           <div class="total-row">
             <span>CGST 2.5%</span>
             <span>+${(orderDetails.tax / 2).toFixed(2)}</span>

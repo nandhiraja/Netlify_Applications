@@ -16,6 +16,7 @@ const MenuSection = () => {
   const [showNotification, setShowNotification] = useState(false);
 
   console.log("state in menupage : ", state)
+  const savedOrderType = localStorage.getItem('orderType');
   const {
     category,
     items = [],
@@ -23,7 +24,7 @@ const MenuSection = () => {
     allMenuData,
     itemTags = [],
     taxTypes = [],
-    orderType = 'dine-in'
+    orderType = savedOrderType || 'dine-in'
   } = state || {};
 
   // State for category switching

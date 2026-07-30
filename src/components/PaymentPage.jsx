@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { CreditCard, QrCode, Loader, Check, Wallet } from 'lucide-react';
+import { CreditCard, QrCode, Loader, Check, Wallet, Smartphone } from 'lucide-react';
 import './Styles/PaymentPage.css';
 import { useCart } from './CartContext';
 import TokenSuccess from './TokenSuccess';
 import { IoMdArrowRoundBack } from "react-icons/io";
 
-const BASE_URL = import.meta.env.VITE_Base_url;
+import { getKioskBaseUrl, defaultFetchHeaders } from '../utils/kioskApi';
+
+const BASE_URL = getKioskBaseUrl();
 
 const PaymentPage = () => {
   const location = useLocation();
@@ -15,18 +17,21 @@ const PaymentPage = () => {
   const { clearCart } = useCart();
 
   // Extract order data from location state
-  const { kot_code, orderId, totalAmount, orderDetails } = location.state || {};
+  const { payment_status, orderId, totalAmount, orderDetails } = location.state || {};
 
   // State management
+  const [kotCode, setKotCode] = useState(null);
   const [showTokenPage, setShowTokenPage] = useState(false);
   const [KDSInvoiceId, setKDSInvoiceId] = useState(null);
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [expandedMethod, setExpandedMethod] = useState(null);
   const [qrData, setQrData] = useState(null);
   const [edcData, setEdcData] = useState(null);
+  const [zomatoData, setZomatoData] = useState(null);
   const [cashData, setCashData] = useState(null);
   const [loadingQR, setLoadingQR] = useState(false);
   const [loadingEDC, setLoadingEDC] = useState(false);
+  const [loadingZomato, setLoadingZomato] = useState(false);
   const [loadingCash, setLoadingCash] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState('PENDING');
   const [transactionDetails, setTransactionDetails] = useState(null);
@@ -90,17 +95,8 @@ const PaymentPage = () => {
     return config ? JSON.parse(config) : { store_id: 'default' };
   };
 
-  // Check if store configuration exists, redirect to config if not
-  useEffect(() => {
-    const config = localStorage.getItem('kiosk_config');
-    if (!config) {
-      alert('Please configure your EDC machine first');
-      navigate('/config');
-    }
-  }, [navigate]);
-
-  // Convert amount to paise (INR * 100)
-  const amountInPaise = Math.round(totalAmount * 100).toString();
+  // Amount in paise (integer) per payments API
+  const amountInPaise = Math.round(Number(totalAmount) * 100);
 
   // ============================================
   // QR CODE PAYMENT HANDLERS
@@ -115,11 +111,14 @@ const PaymentPage = () => {
 
       const response = await fetch(`${BASE_URL}/payments/qr/init`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...defaultFetchHeaders(),
+        },
         body: JSON.stringify({
           order_id: orderId,
           amount_paise: amountInPaise,
-          terminal_id: config.terminal_id
+          ...(config.terminal_id ? { terminal_id: config.terminal_id } : {}),
         })
       });
 
@@ -158,7 +157,7 @@ const PaymentPage = () => {
 
       try {
         const response = await fetch(`${BASE_URL}/payments/qr/status/${orderId}`, {
-          headers: { "ngrok-skip-browser-warning": "true" }
+          headers: { ...defaultFetchHeaders() },
         });
 
         if (!response.ok) throw new Error('Failed to check status');
@@ -169,6 +168,7 @@ const PaymentPage = () => {
           setPaymentStatus('SUCCESS');
           setTransactionDetails(result);
           setKDSInvoiceId(result.kds_invoice_id);
+          if (result.kot_code) setKotCode(result.kot_code);
           clearCart();
           localStorage.removeItem('restaurantCart');
           clearInterval(pollingRef.current);
@@ -187,11 +187,18 @@ const PaymentPage = () => {
   };
 
   // ============================================
-  // EDC CARD PAYMENT HANDLERS
+  // EDC CARD & ZOMATO PAYMENT HANDLERS
   // ============================================
 
-  const handleEDCPayment = async () => {
-    setLoadingEDC(true);
+  const handleEDCPayment = async (paymentMethod = "CARD") => {
+    const isZomato = paymentMethod === "ZOMATO_DISTRICT";
+
+    if (isZomato) {
+      setLoadingZomato(true);
+    } else {
+      setLoadingEDC(true);
+    }
+    
     setError(null);
 
     try {
@@ -201,56 +208,46 @@ const PaymentPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          "ngrok-skip-browser-warning": "true"
+          ...defaultFetchHeaders(),
         },
         body: JSON.stringify({
           order_id: orderId,
           amount_paise: amountInPaise,
-          terminal_id: config.terminal_id
+          terminal_id: config.terminal_id,
+          payment_method: paymentMethod
         })
       });
 
-      if (!response.ok) throw new Error('Failed to initialize EDC payment');
+      if (!response.ok) throw new Error(`Failed to initialize ${isZomato ? 'Zomato District' : 'EDC'} payment`);
 
       const result = await response.json();
-      setEdcData(result);
+      
+      if (isZomato) {
+        setZomatoData(result);
+      } else {
+        setEdcData(result);
+      }
+      
       setPaymentStatus('PROCESSING');
       setTimeRemaining(100);
       setTimerActive(true);
 
-      // Trigger mock payment then start polling
-      // await triggerMockPayment();                   // mock pay trigger shutdown
       startEDCStatusPolling();
 
     } catch (error) {
-      console.error('EDC Initialization Error:', error);
-      setError('Failed to initialize card payment. Please try again.');
-      setLoadingEDC(false);
+      console.error(`${isZomato ? 'Zomato' : 'EDC'} Initialization Error:`, error);
+      setError(`Failed to initialize ${isZomato ? 'Zomato District' : 'card'} payment. Please try again.`);
+      if (isZomato) {
+        setLoadingZomato(false);
+      } else {
+        setLoadingEDC(false);
+      }
     } finally {
-      setLoadingEDC(false);
-    }
-  };
-
-  const triggerMockPayment = async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/payments/edc/mock-trigger`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true"
-        },
-        body: JSON.stringify({ order_id: orderId })
-      });
-
-      if (!response.ok) throw new Error('Failed to trigger mock payment');
-
-      // Wait for PhonePe processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-    } catch (error) {
-      console.error("Mock Payment Error:", error);
-      setError('Failed to process payment. Please try again.');
-      throw error;
+      if (isZomato) {
+        setLoadingZomato(false);
+      } else {
+        setLoadingEDC(false);
+      }
     }
   };
 
@@ -271,7 +268,7 @@ const PaymentPage = () => {
 
       try {
         const response = await fetch(`${BASE_URL}/payments/edc/status/${orderId}`, {
-          headers: { "ngrok-skip-browser-warning": "true" }
+          headers: { ...defaultFetchHeaders() },
         });
 
         if (!response.ok) throw new Error('Failed to check status');
@@ -282,6 +279,7 @@ const PaymentPage = () => {
           setPaymentStatus('SUCCESS');
           setTransactionDetails(result);
           setKDSInvoiceId(result.kds_invoice_id);
+          if (result.kot_code) setKotCode(result.kot_code);
           clearCart();
           localStorage.removeItem('restaurantCart');
           clearInterval(pollingRef.current);
@@ -320,7 +318,7 @@ const PaymentPage = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          "ngrok-skip-browser-warning": "true"
+          ...defaultFetchHeaders(),
         },
         body: JSON.stringify({
           order_id: orderId,
@@ -338,6 +336,7 @@ const PaymentPage = () => {
         setPaymentStatus('SUCCESS');
         setTransactionDetails(result);
         setKDSInvoiceId(result.kds_invoice_id);
+        if (result.kot_code) setKotCode(result.kot_code);
         setCashData(result);
         setTimerActive(false);
         clearCart();
@@ -397,7 +396,7 @@ const PaymentPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId,
-          kot_code,
+          kot_code: kotCode,
           KDSInvoiceId,
           orderDetails,
           orderType,
@@ -423,7 +422,7 @@ const PaymentPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId,
-          kot_code,
+          kot_code: kotCode,
           KDSInvoiceId,
           orderDetails
         })
@@ -450,7 +449,7 @@ const PaymentPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId,
-          kot_code,
+          kot_code: kotCode,
           KDSInvoiceId,
           orderDetails
         })
@@ -495,7 +494,7 @@ const PaymentPage = () => {
       return;
     }
 
-    const message = `*KITCHEN ORDER TICKET*\n\nOrder ID: ${kot_code}\nTransaction ID: ${transactionDetails?.transaction_id || 'N/A'}\nDate: ${new Date().toLocaleString()}\n\n*Items:*\n${orderDetails.items.map(item => `${item.itemName} x${item.quantity}`).join('\n')}\n\nSubtotal: ₹${orderDetails.subtotal.toFixed(2)}\nTax: ₹${orderDetails.tax.toFixed(2)}\nTotal: ₹${orderDetails.total.toFixed(2)}\n\nThank you!`;
+    const message = `*KITCHEN ORDER TICKET*\n\nOrder ID: ${kotCode}\nTransaction ID: ${transactionDetails?.transaction_id || 'N/A'}\nDate: ${new Date().toLocaleString()}\n\n*Items:*\n${orderDetails.items.map(item => `${item.itemName} x${item.quantity}`).join('\n')}\n\nSubtotal: ₹${orderDetails.subtotal.toFixed(2)}\nTax: ₹${orderDetails.tax.toFixed(2)}\nTotal: ₹${orderDetails.total.toFixed(2)}\n\nThank you!`;
 
     const whatsappUrl = `https://wa.me/91${phoneNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -508,8 +507,8 @@ const PaymentPage = () => {
   if (showTokenPage) {
     return (
       <TokenSuccess
-        token={kot_code}
-        kot_code={kot_code}
+        token={kotCode}
+        kot_code={kotCode}
         KDSInvoiceId={KDSInvoiceId}
         orderId={orderId}
         orderDetails={orderDetails}
@@ -569,9 +568,15 @@ const PaymentPage = () => {
               <span>Tax:</span>
               <span>₹{(orderDetails.tax + (orderDetails.takeawayTax || 0)).toFixed(2)}</span>
             </div>
+            {orderDetails.discountAmount > 0 && (
+              <div className="summary-total-row" style={{ color: '#2e7d32', fontWeight: 'bold' }}>
+                <span>Coupon Discount ({orderDetails.discountCode}):</span>
+                <span>-₹{orderDetails.discountAmount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="summary-total-row grand-total">
               <span>Total:</span>
-              <span>₹{orderDetails.total.toFixed(2)}</span>
+              <span>₹{totalAmount.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -635,7 +640,7 @@ const PaymentPage = () => {
                 </div>
                 <p className="qr-instruction">Scan this QR code with any UPI app</p>
                 <div className="transaction-details">
-                  <p><strong>Amount:</strong> ₹{(parseInt(amountInPaise) / 100).toFixed(2)}</p>
+                  <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
                   <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
                 </div>
 
@@ -668,7 +673,7 @@ const PaymentPage = () => {
                   if (!edcData && !loadingEDC && !selectedMethod) {
                     setSelectedMethod('edc');
                     setExpandedMethod('edc');
-                    handleEDCPayment();
+                    handleEDCPayment("CARD");
                   }
                 }}
                 disabled={loadingEDC || edcData || (selectedMethod && selectedMethod !== 'edc')}
@@ -694,7 +699,7 @@ const PaymentPage = () => {
                 <div className="edc-info">
                   <p className="edc-instruction">Please insert or tap your card on the EDC device</p>
                   <div className="transaction-details">
-                    <p><strong>Amount:</strong> ₹{(parseInt(amountInPaise) / 100).toFixed(2)}</p>
+                    <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
                     <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
                   </div>
                 </div>
@@ -703,6 +708,66 @@ const PaymentPage = () => {
                   <div className="waiting-indicator">
                     <div className="spinner"></div>
                     <p>Processing card payment...</p>
+                  </div>
+                )}
+
+                <button className="cancel-payment-btn" onClick={handleCancelPayment}>
+                  Cancel Payment
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Zomato District Payment */}
+          <div className={`payment-method-card ${selectedMethod === 'zomato_district' ? 'selected' : ''} ${selectedMethod && selectedMethod !== 'zomato_district' ? 'disabled' : ''}`}>
+            <div className="method-header">
+              <div className="method-info">
+                <Smartphone size={24} />
+                {/* <span className="method-name">Zomato District</span> */}
+              </div>
+
+              <button
+                className="direct-pay-btn zomato-pay"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!zomatoData && !loadingZomato && !selectedMethod) {
+                    setSelectedMethod('zomato_district');
+                    setExpandedMethod('zomato_district');
+                    handleEDCPayment("ZOMATO_DISTRICT");
+                  }
+                }}
+                disabled={loadingZomato || zomatoData || (selectedMethod && selectedMethod !== 'zomato_district')}
+              >
+                {loadingZomato ? (
+                  <>
+                    <Loader size={18} className="spinning" />
+                    Initializing...
+                  </>
+                ) : zomatoData ? (
+                  <>
+                    <Check size={18} />
+                    Processing
+                  </>
+                ) : (
+                  'Zomato District'
+                )}
+              </button>
+            </div>
+
+            {expandedMethod === 'zomato_district' && zomatoData && (
+              <div className="method-content">
+                <div className="edc-info">
+                  <p className="edc-instruction">Please complete the Zomato District payment on the EDC device</p>
+                  <div className="transaction-details">
+                    <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
+                    <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
+                  </div>
+                </div>
+
+                {paymentStatus === 'PROCESSING' && (
+                  <div className="waiting-indicator">
+                    <div className="spinner"></div>
+                    <p>Processing Zomato payment...</p>
                   </div>
                 )}
 
@@ -775,7 +840,7 @@ const PaymentPage = () => {
                     </button>
                   </div>
                   <div className="transaction-details">
-                    <p><strong>Amount:</strong> ₹{(parseInt(amountInPaise) / 100).toFixed(2)}</p>
+                    <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
                     <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
                   </div>
                 </div>
