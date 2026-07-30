@@ -47,7 +47,7 @@ const TokenSuccess = ({
       const ECD_CONFIG_DATA = JSON.parse(localStorage.getItem('kiosk_config'));
       const storeName = ECD_CONFIG_DATA.store_name;
 
-      const VERSOVA_ADDRESS_LINE_1 = "Shop no. 202, Society, JP Rd, Aram Nagar Part 2, Machlimar,";
+      const VERSOVA_ADDRESS_LINE_1 = "Shop no. 202, Aram nagar, JP Rd, Aram Nagar Part 2, Machlimar,";
       const VERSOVA_ADDRESS_LINE_2 = "Versova, Andheri West, Mumbai, Maharashtra 400061";
 
       const BANDRA_ADDRESS_LINE_1 = "Shop No.36/A, Off Carter Rd, Rizvi Complex, Union Park,";
@@ -56,8 +56,8 @@ const TokenSuccess = ({
       const BANDRA_GST_NUMBER = "27AA0FH7156G1Z0";
       const VERSOVA_GST_NUMBER = "27AA0FH7156G1Z0";
 
-      const BANDRA_FSSAI_NUMBER = "21524005001190";
-      const VERSOVA_FSSAI_NUMBER = "21524005001190";
+      const BANDRA_FSSAI_NUMBER = "21524006001802";
+      const VERSOVA_FSSAI_NUMBER = "21524006001802";
 
       const BANDRA_CIN_NUMBER = "6731";
       const VERSOVA_CIN_NUMBER = "6731";
@@ -70,18 +70,24 @@ const TokenSuccess = ({
       let FSSAI_NUMBER = "";
       let CIN_NUMBER = "";
 
-      if (storeName === "Versova") {
+      if (storeName.includes("Versova") || storeName.includes("versova") || storeName.includes("VERSOVA")) {
         GST_NUMBER = VERSOVA_GST_NUMBER;
         ADDRESS_LINE_1 = VERSOVA_ADDRESS_LINE_1;
         ADDRESS_LINE_2 = VERSOVA_ADDRESS_LINE_2;
         FSSAI_NUMBER = VERSOVA_FSSAI_NUMBER;
         CIN_NUMBER = VERSOVA_CIN_NUMBER;
-      } else {
+      } else if (storeName.includes("Bandra") || storeName.includes("bandra") || storeName.includes("BANDRA")) {
         GST_NUMBER = BANDRA_GST_NUMBER;
         ADDRESS_LINE_1 = BANDRA_ADDRESS_LINE_1;
         ADDRESS_LINE_2 = BANDRA_ADDRESS_LINE_2;
         FSSAI_NUMBER = BANDRA_FSSAI_NUMBER;
         CIN_NUMBER = BANDRA_CIN_NUMBER;
+      }else{
+        GST_NUMBER = "";
+        ADDRESS_LINE_1 = "";
+        ADDRESS_LINE_2 = "";
+        FSSAI_NUMBER = "";
+        CIN_NUMBER = "";
       }
 
       console.log("storeName : ", storeName);
