@@ -145,7 +145,6 @@ const MenuItemModal = ({ item, addonGroups = [], onClose, onAddToCart }) => {
   };
 
   const isAddToCartDisabled = hasVariants && !selectedVariation;
-  const isUnpriced = !hasVariants && !(item.price > 0);
 
   const basePrice = hasVariants
     ? (selectedVariation ? parseFloat(selectedVariation.price) || 0 : 0)
@@ -317,8 +316,8 @@ const MenuItemModal = ({ item, addonGroups = [], onClose, onAddToCart }) => {
             <button onClick={onClose} className="cancel-btn">
               Cancel
             </button>
-            <button onClick={handleAddToCartClick} className="add-to-cart-btn" disabled={isAddToCartDisabled || isUnpriced}>
-              {isUnpriced ? 'Unavailable' : isAddToCartDisabled ? 'Select a Variant' : 'Add'}
+            <button onClick={handleAddToCartClick} className="add-to-cart-btn" disabled={isAddToCartDisabled}>
+              {isAddToCartDisabled ? 'Select a Variant' : 'Add'}
               {/* {quantity} to Cart :  ₹{finalAmount.toFixed(2)} */}
             </button>
           </div>

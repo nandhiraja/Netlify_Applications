@@ -27,12 +27,6 @@ const MenuItemCard = ({ item, onAddClick }) => {
     ? item.variation.filter(v => v.active === undefined || String(v.active) === '1')
     : [];
   const hasVariants = activeVariations.length > 0;
-  const variantPrices = activeVariations.map(v => parseFloat(v.price) || 0);
-  const minVariantPrice = hasVariants ? Math.min(...variantPrices) : 0;
-  const hasPriceRange = hasVariants && variantPrices.some(p => p !== minVariantPrice);
-  const displayPrice = hasVariants ? minVariantPrice : price;
-  // Variant-priced items whose variants are missing from the menu have no valid price
-  const isUnavailable = !hasVariants && !(price > 0);
 
   // Handle image load error
   const handleImageError = () => {
@@ -78,22 +72,21 @@ const MenuItemCard = ({ item, onAddClick }) => {
         {/* </div> */}
         
         <div className="item-footer">
-          <div className="price-container">
-            <span className="item-price">
-              {hasPriceRange && <span className="price-from">From </span>}
-              <span className="currency-symbol">₹</span>
-              {displayPrice.toFixed(2)}
-            </span>
-            
-            
-          </div>
+          {/* Variant items are priced per variant, shown in the modal */}
+          {!hasVariants && (
+            <div className="price-container">
+              <span className="item-price">
+                <span className="currency-symbol">₹</span>
+                {price.toFixed(2)}
+              </span>
+            </div>
+          )}
           
           <button 
             className={`add-btn ${hasVariants ? 'variant-btn' : ''}`}
             onClick={() => onAddClick(item)}
-            disabled={isUnavailable}
             aria-label={hasVariants ? `See variants of ${itemName}` : `Add ${itemName} to cart`}
-          >{hasVariants ? 'See Variants' : isUnavailable ? 'Unavailable' : 'Add'}
+          >{hasVariants ? 'See Variants' : 'Add'}
             {/* <span className="add-btn-text"></span> */}
           </button>
         </div>

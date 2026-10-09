@@ -226,23 +226,15 @@
   color: var(--neutral-50);
 }
 
-.add-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
 .add-btn.variant-btn {
   white-space: nowrap;
   padding-left: 1rem;
   padding-right: 1rem;
-}
-
-.price-from {
-  font-size: 0.8em;
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-secondary);
+  background: transparent;
+  border: 2px solid var(--neutral-800);
+  box-shadow: none;
+  flex: 1;
+  justify-content: center;
 }
 
 /* TAX BREAKDOWN */
