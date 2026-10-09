@@ -541,11 +541,16 @@ const PaymentPage = () => {
 
           <div className="summary-items">
             {orderDetails.items.map((item, idx) => {
-              const itemTotal = (item.price + (item.taxAmount || 0)) * item.quantity;
+              // pricePerUnit already includes the selected variant, add-ons and tax
+              const unitPrice = item.pricePerUnit !== undefined
+                ? item.pricePerUnit
+                : (item.price || 0) + (item.taxAmount || 0);
+              const itemTotal = unitPrice * item.quantity;
+              const variantName = item.selectedCustomizations?.variation?.name;
               return (
                 <div key={idx} className="summary-item-row">
                   <span className="item-name-qty">
-                    {item.itemName} <span className="qty-badge">x{item.quantity}</span>
+                    {item.itemName}{variantName ? ` (${variantName})` : ''} <span className="qty-badge">x{item.quantity}</span>
                   </span>
                   <span className="item-amount">₹{itemTotal.toFixed(2)}</span>
                 </div>

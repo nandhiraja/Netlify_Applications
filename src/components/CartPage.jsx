@@ -485,7 +485,7 @@ const handleProceedToPayment = async () => {
       <div className="cart-item-title">{item.itemName}</div>
       {item.selectedCustomizations?.variation && (
          <div className="cart-item-variation" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-           Variation: {item.selectedCustomizations.variation.name}
+           Variant: {item.selectedCustomizations.variation.name}
          </div>
       )}
       {item.selectedCustomizations?.addons?.length > 0 && (

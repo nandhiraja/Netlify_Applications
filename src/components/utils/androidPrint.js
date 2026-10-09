@@ -160,7 +160,12 @@ function buildBillEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, orderTyp
         }
     }
 
-    const itemPriceWithTax = basePrice + (item.taxAmount || 0);
+    // item.taxAmount is derived from the item's base price (0 for variant items),
+    // so recompute tax on the actual variant + add-on price
+    const taxPerUnit = (item.taxes && item.taxes.length > 0)
+      ? item.taxes.reduce((sum, tax) => sum + (basePrice * tax.percentage / 100), 0)
+      : (item.taxAmount || 0);
+    const itemPriceWithTax = basePrice + taxPerUnit;
     const itemTotal = (itemPriceWithTax * item.quantity).toFixed(2);
     const nameLine = padEnd(item.itemName, 22);
     const qty = padEnd(String(item.quantity), 4);

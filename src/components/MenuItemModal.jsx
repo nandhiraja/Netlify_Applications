@@ -15,14 +15,17 @@ const MenuItemModal = ({ item, addonGroups = [], onClose, onAddToCart }) => {
   const [selectedVariation, setSelectedVariation] = useState(null);
   const [selectedAddons, setSelectedAddons] = useState({});
 
-  // Reset state when item changes
+  // Only active variations, in the order configured in the POS
+  const variations = (item?.itemallowvariation && Array.isArray(item.variation))
+    ? item.variation
+        .filter(v => v.active === undefined || String(v.active) === '1')
+        .sort((a, b) => (parseInt(a.variationrank) || 0) - (parseInt(b.variationrank) || 0))
+    : [];
+  const hasVariants = variations.length > 0;
+
+  // Reset state when item changes - the user must pick a variation explicitly
   useEffect(() => {
-    if (item?.itemallowvariation && item.variation?.length > 0) {
-      // Auto-select first variation
-      setSelectedVariation(item.variation[0]);
-    } else {
-      setSelectedVariation(null);
-    }
+    setSelectedVariation(null);
     setSelectedAddons({});
     setQuantity(1);
   }, [item]);
@@ -64,10 +67,8 @@ const MenuItemModal = ({ item, addonGroups = [], onClose, onAddToCart }) => {
     if (!item) return 0;
     
     let basePrice = item.price;
-    if (item.itemallowvariation && selectedVariation) {
-      basePrice = parseFloat(selectedVariation.price) || 0;
-    } else if (item.itemallowvariation && !selectedVariation) {
-      basePrice = 0;
+    if (hasVariants) {
+      basePrice = selectedVariation ? (parseFloat(selectedVariation.price) || 0) : 0;
     }
     
     let addonsTotal = 0;
@@ -89,7 +90,7 @@ const MenuItemModal = ({ item, addonGroups = [], onClose, onAddToCart }) => {
     
     setTotalTax(taxAmount);
     return (priceBeforeTax + taxAmount) * quantity;
-  }, [item, quantity, selectedVariation, selectedAddons]);
+  }, [item, quantity, selectedVariation, selectedAddons, hasVariants]);
 
   useEffect(() => {
     if (item) {
@@ -143,9 +144,12 @@ const MenuItemModal = ({ item, addonGroups = [], onClose, onAddToCart }) => {
     onClose();
   };
 
-  const isAddToCartDisabled = item.itemallowvariation && !selectedVariation;
+  const isAddToCartDisabled = hasVariants && !selectedVariation;
+  const isUnpriced = !hasVariants && !(item.price > 0);
 
-  const basePrice = (item.itemallowvariation && selectedVariation) ? parseFloat(selectedVariation.price) || 0 : item.price;
+  const basePrice = hasVariants
+    ? (selectedVariation ? parseFloat(selectedVariation.price) || 0 : 0)
+    : item.price;
   let addonsTotal = 0;
   Object.values(selectedAddons).forEach(addonArray => {
     addonArray.forEach(addon => {
@@ -205,11 +209,11 @@ const MenuItemModal = ({ item, addonGroups = [], onClose, onAddToCart }) => {
 
         <div className="modal-body">
           {/* Variations Section */}
-          {item.itemallowvariation && item.variation?.length > 0 && (
+          {hasVariants && (
             <div className="modal-section modal-variations">
-              <h3 className="section-title">Select Variation <span className="required-star">*</span></h3>
+              <h3 className="section-title">Select Variant <span className="required-star">*</span></h3>
               <div className="variation-options">
-                {item.variation.map(vr => (
+                {variations.map(vr => (
                   <label key={vr.id} className={`variation-label ${selectedVariation?.id === vr.id ? 'selected' : ''}`}>
                     <input 
                       type="radio" 
@@ -297,7 +301,7 @@ const MenuItemModal = ({ item, addonGroups = [], onClose, onAddToCart }) => {
         <div className="modal-footer">
           <div className="price-breakdown">
             <div className="price-row">
-              <span>Base Amount ({quantity} × ₹{basePrice.toFixed(2)}):</span>
+              <span>Base Amount ({quantity} × ₹{priceBeforeTax.toFixed(2)}):</span>
               <span>₹{subtotal.toFixed(2)}</span>
             </div>
             <div className="price-row">
@@ -313,8 +317,8 @@ const MenuItemModal = ({ item, addonGroups = [], onClose, onAddToCart }) => {
             <button onClick={onClose} className="cancel-btn">
               Cancel
             </button>
-            <button onClick={handleAddToCartClick} className="add-to-cart-btn" disabled={isAddToCartDisabled}>
-              Add 
+            <button onClick={handleAddToCartClick} className="add-to-cart-btn" disabled={isAddToCartDisabled || isUnpriced}>
+              {isUnpriced ? 'Unavailable' : isAddToCartDisabled ? 'Select a Variant' : 'Add'}
               {/* {quantity} to Cart :  ₹{finalAmount.toFixed(2)} */}
             </button>
           </div>
