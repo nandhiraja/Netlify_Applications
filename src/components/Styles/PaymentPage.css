@@ -32,7 +32,7 @@
 .payment-root .pay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .payment-root .pay-tile { --tint: #fff6ec; --tone: var(--orange); --tone-ink: #1d0e00; --edge: #ffd9b0;
   position: relative; overflow: hidden; text-align: left; background: var(--tint); border: 2px solid var(--edge); border-radius: var(--r-md); padding: 18px; display: flex; flex-direction: column; gap: 14px; min-height: 160px; transition: transform .15s, box-shadow .2s; }
-.payment-root .pay-tile:active { transform: scale(0.97); box-shadow: 0 0 0 5px color-mix(in srgb, var(--tone) 25%, transparent); }
+.payment-root .pay-tile:active { transform: scale(0.97); box-shadow: 0 0 0 5px rgba(29, 14, 0, 0.12); box-shadow: 0 0 0 5px color-mix(in srgb, var(--tone) 25%, transparent); }
 .payment-root .pay-tile.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; min-height: 0; }
 .payment-root .pay-tile.m-upi { --tint: #fff1e2; --tone: var(--orange); --tone-ink: #1d0e00; --edge: var(--orange); }
 .payment-root .pay-tile.m-card { --tint: #fbeef0; --tone: var(--wine); --tone-ink: #fff; --edge: #efc9d3; }
