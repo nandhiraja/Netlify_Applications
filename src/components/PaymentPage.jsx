@@ -9,7 +9,7 @@ import TokenSuccess from './TokenSuccess';
 
 import { getKioskBaseUrl, defaultFetchHeaders } from '../utils/kioskApi';
 import { orderTypeLabel, orderTypePrintLabel } from '../lib/orderType';
-import { imageUrl, matchMenuItem, useMenuMeta } from '../lib/menuMeta';
+import { dishImage } from '../lib/dishImages';
 
 const BASE_URL = getKioskBaseUrl();
 
@@ -17,7 +17,6 @@ const PaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { clearCart } = useCart();
-  const meta = useMenuMeta();
 
   // Extract order data from location state
   const { payment_status, orderId, totalAmount, orderDetails } = location.state || {};
@@ -643,7 +642,7 @@ const PaymentPage = () => {
                 </div>
                 <div className="bill-dishes" aria-hidden="true">
                   {orderDetails.items.slice(0, 3).map((it, i) => {
-                    const img = it.imageURL || imageUrl(matchMenuItem(meta, it.itemName)?.image);
+                    const img = dishImage(it);
                     return (
                       <span key={i} className={`dish ${img ? '' : 'pl'}`} style={img ? { backgroundImage: `url(${img})` } : undefined}>
                         {it.quantity > 1 && <b>×{it.quantity}</b>}

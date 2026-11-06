@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import '../styles/ktr.css';
 import { useCart } from './CartContext';
 import { activeVariations, rupee } from '../lib/catalog';
-import { imageUrl } from '../lib/menuMeta';
+import { dishImage } from '../lib/dishImages';
 
 /**
  * Item sheet: photo, story, Petpooja variations and add-on groups (min/max rules), free-text
@@ -93,7 +93,7 @@ const MenuItemModal = ({ item, menuItem = null, addonGroups = [], orderType = 'd
     onClose();
   };
 
-  const img = item.imageURL || imageUrl(menuItem?.image);
+  const img = dishImage(item);
   const kitchenOptions = menuItem?.options || [];
 
   return (

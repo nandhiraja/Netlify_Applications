@@ -5,8 +5,9 @@ import { useCart } from './CartContext';
 import MenuItemModal from './MenuItemModal';
 import MenuSkeleton from './MenuSkeleton';
 import { displayPrice, rupee, useCatalog, activeVariations } from '../lib/catalog';
-import { imageUrl, matchMenuItem, useMenuMeta } from '../lib/menuMeta';
+import { matchMenuItem, useMenuMeta } from '../lib/menuMeta';
 import { orderTypeLabel, readOrderType } from '../lib/orderType';
+import { dishImage } from '../lib/dishImages';
 
 /** Time-of-day suggestion card (copy from the kiosk design). */
 function moodNow() {
@@ -47,7 +48,10 @@ const MenuPage = () => {
     return m;
   }, [data, metaFor]);
 
-  const items = (data?.items || []).filter((i) => i.categoryId === activeCat);
+  // Petpooja charge lines (packaging) are billed by the kiosk itself, not ordered as dishes.
+  const isCharge = (i) => /\bcharges?\b/i.test(i.itemName || '');
+  const items = (data?.items || []).filter((i) => i.categoryId === activeCat && !isCharge(i));
+  const categoryName = (id) => categories.find((c) => c.categoryId === id)?.name || '';
   const inCart = useMemo(() => {
     const m = new Map();
     for (const it of cart.items) m.set(it.itemId, (m.get(it.itemId) || 0) + it.quantity);
@@ -154,7 +158,7 @@ const MenuPage = () => {
         <div className="grid">
           {items.map((item) => {
             const mm = metaFor.get(item.itemId);
-            const img = item.imageURL || imageUrl(mm?.image);
+            const img = dishImage(item, categoryName(item.categoryId));
             const n = inCart.get(item.itemId) || 0;
             const variants = activeVariations(item).length > 0;
             return (

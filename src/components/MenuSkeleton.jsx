@@ -1,33 +1,39 @@
 import React from 'react';
-import { IoMdArrowRoundBack } from "react-icons/io";
-import './Styles/MenuSkeleton.css';
+import '../styles/ktr.css';
 
-const MenuSkeleton = () => {
-  return (
-    <div className="menu-container">
-      {/* Skeleton Header */}
-      <div className="menu-header">
-        <div className="skeleton-back-btn"></div>
-        <div className="skeleton-title"></div>
+/** Loading state shaped like the menu screen, so the real menu replaces it without a jump. */
+const MenuSkeleton = () => (
+  <div className="ktr ktr-screen menu menu-skeleton" aria-busy="true" aria-label="Loading the menu">
+    <div className="topbar">
+      <div className="topbar-in wrap">
+        <img src="/img/logo.png" alt="KTR" />
+        <span className="sk sk-chip" />
+        <span className="spacer" />
+        <span className="sk sk-chip" />
       </div>
-
-      {/* Skeleton Grid */}
-      <div className="menu-grid">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
-          <div key={item} className="skeleton-card">
-            <div className="skeleton-card-inner">
-              <div className="skeleton-image"></div>
-              <div className="skeleton-label">
-                <div className="skeleton-label-inner">
-                  <div className="skeleton-text"></div>
-                </div>
-              </div>
-            </div>
+    </div>
+    <div className="topbar-plaid" />
+    <nav className="cats wrap">
+      {[120, 140, 100, 110, 90].map((w, i) => (
+        <span key={i} className="sk sk-pill" style={{ width: w }} />
+      ))}
+    </nav>
+    <main className="content wrap">
+      <span className="sk sk-title" />
+      <div className="grid">
+        {Array.from({ length: 6 }, (_, i) => (
+          <div key={i} className="item sk-card">
+            <span className="ph sk" />
+            <span className="tx">
+              <span className="sk sk-line" />
+              <span className="sk sk-line short" />
+              <span className="sk sk-line price" />
+            </span>
           </div>
         ))}
       </div>
-    </div>
-  );
-};
+    </main>
+  </div>
+);
 
 export default MenuSkeleton;
