@@ -1,11 +1,13 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
+import '../styles/ktr.css';
 import './Styles/TokenSuccess.css';
 import { Printer, MessageCircle } from 'lucide-react';
 import { IoLogoWhatsapp } from "react-icons/io";
 import { silentPrintBill, silentPrintFoodKOT, silentPrintCoffeeKOT, silentPrintAll } from './utils/silentPrint';
 import { triggerBackend9101Prints } from './utils/backendPrintService';
 import { isAndroidBridge, androidPrintAll } from './utils/androidPrint';
+import { orderTypeLabel, orderTypePrintLabel } from '../lib/orderType';
 
 const TokenSuccess = ({
   token,
@@ -33,7 +35,7 @@ const TokenSuccess = ({
     if (!printError && isPrintSuccess) {
       const timer = setTimeout(() => {
         navigate('/');
-      }, 2000); // 2 seconds
+      }, 10000); // 10 s: long enough to read the token and wait time
 
       return () => clearTimeout(timer);
     }
@@ -44,7 +46,7 @@ const TokenSuccess = ({
 
     const autoPrintAll = async () => {
       // Set printing status and show notification
-      const orderType = localStorage.getItem('orderType') === "dine-in" ? 'DINE IN' : "TAKE AWAY";
+      const orderType = orderTypePrintLabel();
       const ECD_CONFIG_DATA = JSON.parse(localStorage.getItem('kiosk_config'));
       const storeName = ECD_CONFIG_DATA.store_name;
 
@@ -213,130 +215,64 @@ const TokenSuccess = ({
       alert('Please enter a valid 10-digit phone number');
     }
   };
-  const cornerImages = [
-    { position: 'top-left', src: 'TOP_LEFT.png', alt: 'Top left decoration' },
-    { position: 'top-right', src: 'TOP_RIGHT.png', alt: 'Top right decoration' },
-    { position: 'bottom-left', src: 'BOTTOM_LEFT.png', alt: 'Bottom left decoration' },
-    { position: 'bottom-right', src: 'BOTTOM_RIGHT.png', alt: 'Bottom right decoration' }
-  ];
 
-  const handleImageError = (e) => {
-    e.target.style.display = 'none';
-  };
+  // Rough wait: base kitchen time plus a little per dish (coffee and add-ons don't add time).
+  const foodUnits = (orderDetails?.items || []).reduce((n, it) => {
+    const name = (it.itemName || '').toLowerCase();
+    return /coffee|chutney|pudi powder/.test(name) ? n : n + (it.quantity || 0);
+  }, 0);
+  const waitMins = Math.min(25, 8 + 2 * Math.max(0, foodUnits - 1));
+  const tokenNo = token ? token.replace(/^KTR-/, '') : 'N/A';
+
   return (
-    <div className="">
-      <div className="kiosk-container">
-        {cornerImages.map(({ position, src, alt }) => (
-          <div key={position} className={`corner-icon ${position}`}>
-            <img src={src} alt={alt} onError={handleImageError} />
+    <div className="ktr ktr-screen done wrap">
+      <div className="done-wrap">
+        <section className="ticket" aria-live="polite">
+          <span className="k">Your token</span>
+          <span className="num">{tokenNo}</span>
+          <div className="tear" aria-hidden="true" />
+          <p className="its">
+            {(orderDetails?.items || []).map((it, i) => (
+              <span key={i}>
+                {it.quantity} × {it.itemName}
+                {it.selectedCustomizations?.parcel ? <span className="tg p">Take away</span> : null}
+                <br />
+              </span>
+            ))}
+          </p>
+          <p>{orderTypeLabel()} · Paid ₹{Number(orderDetails?.total || 0).toFixed(0)}</p>
+        </section>
+
+        <section className="promise">
+          <div className="pr-time">
+            <b>{waitMins}</b>
+            <span>min</span>
           </div>
-        ))}
-
-        {/* Border Frame */}
-        <div className="token-border-frame">
-          {/* Top Center Image */}
-          <div className="center-decoration center-top">
-            <img
-              src="./Token_Success_Center_Image.png"
-              alt="decoration"
-              className="decoration-image"
-              onError={(e) => e.target.style.display = 'none'}
-            />
-          </div>
-
-          {/* Main Content */}
-          <div className="token-content">
-            <h1 className="token-thank-you">
-              Thank you<br />
-              for placing the order!
-            </h1>
-
-
-            <div className="token-display-box">
-              <img className="token-image-ktr" src="/Bill-KTR-logo.png" alt="KTR-logo" />
-              <div className="token-number">{token ? token.slice(4) : 'N/A'}</div>
-            </div>
-
-            <p className="token-instructions">
-              Please collect your token<br />
-              and wait for call out ( Average ~15 min )
+          <div className="pr-tx">
+            <span className="pr-k">Made fresh, just for you</span>
+            <h2>Ready in about {waitMins} minutes</h2>
+            <p className="pr-tip">
+              Collect your printed token below the screen, grab a seat and keep an eye on the token board.
+              We&apos;ll call out <b>token {tokenNo}</b> the moment it&apos;s ready.
             </p>
-
-            {/* 🔔 PRINT STATUS NOTIFICATION */}
-            {printNotification && (
-              <div className={`print-notification ${printStatus}`}>
-                <div className="print-notification-content">
-                  {printStatus === 'printing' && (
-                    <div className="print-spinner"></div>
-                  )}
-                  {printStatus === 'success' && (
-                    <span className="print-icon">✓</span>
-                  )}
-                  <span className="print-message">{printNotification}</span>
-                </div>
-              </div>
-            )}
-
-            <div className="token-actions">
-              {/* ======================================== */}
-              {/* MANUAL PRINT BUTTON - COMMENTED OUT     */}
-              {/* Printing is now AUTOMATED on page load  */}
-              {/* ======================================== */}
-              {/* <div className="token-actions-print-group">
-                <button className="token-btn token-btn-print-all" onClick={onPrintAll}>
-                  <Printer size={20} />
-                  <span>Print Bill & KOT</span>
-                </button>
-              </div> */}
-
-              {/* Other Actions Group */}
-              <div className="token-actions-other-group">
-                {/* WhatsApp Button - Commented Out */}
-                {/* <button 
-                  className="token-btn token-btn-whatsapp" 
-                  onClick={() => setShowWhatsappInput(!showWhatsappInput)}
-                >
-                  <IoLogoWhatsapp size={20} color='green'  />
-                  <span>WhatsApp</span>
-                </button> */}
-
-                <button
-                  className="token-btn"
-                  onClick={() => navigate('/')}
-                >
-                  Start New Order
-                </button>
-              </div>
-            </div>
-
-            {/* WhatsApp Input Section - Commented Out */}
-            {/* {showWhatsappInput && (
-              <div className="whatsapp-section">
-                <input
-                  type="tel"
-                  placeholder="Enter mobile number"
-                  value={whatsappNumber}
-                  onChange={(e) => setWhatsappNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                  className="whatsapp-input"
-                  maxLength="10"
-                />
-                <button className="whatsapp-send-btn" onClick={handleWhatsappSend}>
-                  Send
-                </button>
-              </div>
-            )} */}
           </div>
+        </section>
+      </div>
 
-          {/* Bottom Center Image */}
-          <div className="center-decoration center-bottom">
-            <img
-              src="/images/bottom-decoration.png"
-              alt="decoration"
-              className="decoration-image"
-              onError={(e) => e.target.style.display = 'none'}
-            />
-          </div>
+      {printNotification && (
+        <div className={`print-note ${printStatus}`}>
+          {printStatus === 'printing' && <span className="print-spinner" />}
+          {printStatus === 'success' && <span aria-hidden="true">✓</span>}
+          <span>{printNotification}</span>
         </div>
+      )}
+
+      <div className="done-foot">
+        <span className="cd">Namaskara, and enjoy your tiffin!</span>
+        <button type="button" className="btn primary" onClick={() => navigate('/')}>
+          Start a new order
+        </button>
+      </div>
 
         {/* ⚠️ ERROR MODAL - Shows when print fails */}
         {printError && (
@@ -383,7 +319,6 @@ const TokenSuccess = ({
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };

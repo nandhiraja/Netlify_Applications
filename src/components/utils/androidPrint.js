@@ -1,3 +1,4 @@
+import { kitchenTags } from './kitchenNotes';
 /**
  * Android WebView Print Bridge - ESC/POS Utility
  *
@@ -276,6 +277,9 @@ function buildFoodKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, order
                  r += `       [Add: ${a.name}]\n`;
              });
         }
+        kitchenTags(item).forEach(tag => {
+             r += `       ${tag}\n`;
+        });
     }
   });
 
@@ -346,6 +350,9 @@ function buildCoffeeKOTEscPos(orderId, kot_code, KDSInvoiceId, orderDetails, ord
                  r += `       [Add: ${a.name}]\n`;
              });
         }
+        kitchenTags(item).forEach(tag => {
+             r += `       ${tag}\n`;
+        });
     }
   });
 

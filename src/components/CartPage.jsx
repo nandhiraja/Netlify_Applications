@@ -1,181 +1,118 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Minus, Trash, Loader, CheckCircle, Ticket, X } from 'lucide-react';
-import './Styles/CartPage.css';
-import { useCart } from './CartContext';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { IoMdArrowRoundBack } from "react-icons/io";
+import '../styles/ktr.css';
+import { useCart } from './CartContext';
 import {
   getKioskBaseUrl,
   getCatalogChannel,
   storeScopedHeaders,
   getStoreIdForHeader,
 } from '../utils/kioskApi';
+import { imageUrl, matchMenuItem, useMenuMeta } from '../lib/menuMeta';
+import { lineType, orderTypeLabel, orderTypePayload, readOrderType } from '../lib/orderType';
 
 const BASE_URL = getKioskBaseUrl();
-// just for verification
-const others = [   
-  "1302832751",
-  "1302832750",
-  "1302832749",
-  "1302832748",
-  "1302832747",
-  "1302832746",
-  "1302832198",
-]
+
+// Items excluded from the takeaway packing charge (extras, add-on chutneys and the like).
 const EXCLUDED_TAKEAWAY_ITEM_IDS = [
-  "1302832751",
-  "1302832750",
-  "1302832749",
-  "1302832748",
-  "1302832747",
-  "1302832746",
-  "1302832198",
-  "1303112180",
-  "1303001035"
-] // Add item IDs here to exclude from takeaway charge
+  '1302832751',
+  '1302832750',
+  '1302832749',
+  '1302832748',
+  '1302832747',
+  '1302832746',
+  '1302832198',
+  '1303112180',
+  '1303001035',
+];
+
+const NO_DISCOUNT = {
+  couponApplied: false,
+  discountId: null,
+  discountCode: '',
+  discountType: '',
+  discountValue: 0,
+  discountAmount: 0,
+};
+
+/** Pre-tax unit price and tax per unit for a cart line (variation + add-ons). */
+function unitPrices(item) {
+  let base = item.price || 0;
+  let tax = item.taxAmount || 0;
+  const c = item.selectedCustomizations;
+  if (c) {
+    const addons = (c.addons || []).reduce((s, a) => s + parseFloat(a.price || 0), 0);
+    base = (c.variation ? parseFloat(c.variation.price || 0) : item.price || 0) + addons;
+    tax = (item.taxes || []).reduce((s, t) => s + (base * t.percentage) / 100, 0);
+  }
+  return { base, tax };
+}
 
 function CartPage() {
   const navigate = useNavigate();
-  const { cart, removeItem, updateQuantity, clearCart } = useCart();
+  const { state } = useLocation();
+  const { cart, removeItem, updateQuantity, setLineType, clearCart } = useCart();
+  const meta = useMenuMeta();
+  const orderType = state?.orderType || readOrderType();
+  const storeId = getStoreIdForHeader();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { state } = useLocation();
-
   const [showCouponPrompt, setShowCouponPrompt] = useState(false);
   const [showCouponInput, setShowCouponInput] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
-  
-  const [discountState, setDiscountState] = useState({
-    couponApplied: false,
-    discountId: null,
-    discountCode: "",
-    discountType: "",
-    discountValue: 0,
-    discountAmount: 0
-  });
   const [couponError, setCouponError] = useState(null);
   const [couponSuccess, setCouponSuccess] = useState(false);
   const [isEligibleForCoupon, setIsEligibleForCoupon] = useState(false);
-  
-  const storeId = getStoreIdForHeader();
-    
+  const [discountState, setDiscountState] = useState(NO_DISCOUNT);
 
-  console.log("state in cartpage : ",state)
+  const breakdown = cart.items.reduce(
+    (acc, item) => {
+      const { base, tax } = unitPrices(item);
+      return { subtotal: acc.subtotal + base * item.quantity, tax: acc.tax + tax * item.quantity };
+    },
+    { subtotal: 0, tax: 0 },
+  );
 
-  // Read from state as fallback, but prefer localStorage for consistency
-  const savedOrderType = localStorage.getItem('orderType');
-  const {  
-    orderType = savedOrderType || 'dine-in'
-  } = state || {};
-
-
-
-
-
-
-  // Calculate totals properly
-  const calculateItemTotal = (item) => {
-    return item.pricePerUnit ? (item.pricePerUnit * item.quantity) : ((item.price || 0) + (item.taxAmount || 0)) * item.quantity;
-  };
-
-  const breakdown = cart.items.reduce((acc, item) => {
-    // If it has variations/addons, calculate its base and tax.
-    let basePrice = item.price || 0;
-    let taxPerUnit = item.taxAmount || 0;
-    
-    if (item.selectedCustomizations) {
-        let addonsTotal = 0;
-        if (item.selectedCustomizations.addons) {
-             item.selectedCustomizations.addons.forEach(a => addonsTotal += parseFloat(a.price || 0));
-        }
-        basePrice = (item.selectedCustomizations.variation ? parseFloat(item.selectedCustomizations.variation.price || 0) : (item.price || 0)) + addonsTotal;
-        
-        // recalculate tax per unit based on the new basePrice
-        if (item.taxes && item.taxes.length > 0) {
-            taxPerUnit = item.taxes.reduce((sum, tax) => sum + (basePrice * tax.percentage / 100), 0);
-        } else {
-            taxPerUnit = 0;
-        }
-    }
-
-    const baseTotal = basePrice * item.quantity;
-    const taxTotal = taxPerUnit * item.quantity;
-    
-    return {
-      subtotal: acc.subtotal + baseTotal,
-      tax: acc.tax + taxTotal
-    };
-  }, { subtotal: 0, tax: 0 });
-
-  const orderTypePayload = (orderType === 'Dine In' || orderType === 'dine-in') ? 'DINEIN' : 'TAKEAWAY';
-
-  // Calculate Takeaway Charges
-  let takeawayChargesWithoutTax = 0;
-  let takeawayChargesWithTax = 0;
-  let takeawayTax = 0;
-
-  if (orderTypePayload === 'TAKEAWAY') {
-    let applicableQuantity = 0;
-    cart.items.forEach(item => {
-      const itemId = item.skuCode || item.itemId?.toString() || '';
-      if (!EXCLUDED_TAKEAWAY_ITEM_IDS.includes(itemId)) {
-        applicableQuantity += item.quantity;
-      }
-    });
-
-    takeawayChargesWithoutTax = applicableQuantity * 10;
-    if (takeawayChargesWithoutTax > 100) {
-      takeawayChargesWithoutTax = 100;
-    }
-    
-    // 5% GST on takeaway charge
-    takeawayTax = takeawayChargesWithoutTax * 0.05;
-    takeawayChargesWithTax = takeawayChargesWithoutTax + takeawayTax;
-  }
+  // Packing charge: ₹10 per parcel item (excluded items free), capped at ₹100, plus 5% tax.
+  // Same rule as the server, which recomputes and checks it.
+  const parcelQty = cart.items.reduce((n, item) => {
+    const id = item.skuCode || item.itemId?.toString() || '';
+    return lineType(item, orderType) === 'takeaway' && !EXCLUDED_TAKEAWAY_ITEM_IDS.includes(id) ? n + item.quantity : n;
+  }, 0);
+  const takeawayChargesWithoutTax = Math.min(parcelQty * 10, 100);
+  const takeawayTax = takeawayChargesWithoutTax * 0.05;
+  const takeawayChargesWithTax = takeawayChargesWithoutTax + takeawayTax;
 
   const total = breakdown.subtotal + breakdown.tax + takeawayChargesWithTax;
   const finalPayableAmount = Math.max(0, total - (discountState.discountAmount || 0));
 
-  // Clear coupon if cart total changes
+  // A changed cart invalidates an applied coupon.
   useEffect(() => {
     if (discountState.couponApplied) {
-      setDiscountState({
-        couponApplied: false,
-        discountId: null,
-        discountCode: "",
-        discountType: "",
-        discountValue: 0,
-        discountAmount: 0
-      });
+      setDiscountState(NO_DISCOUNT);
       setCouponCode('');
     }
   }, [total]);
 
   useEffect(() => {
     if (cart.items.length === 0 || !storeId) return;
-
-    const checkEligibleCoupons = async () => {
+    (async () => {
       try {
-        const response = await fetch(`${BASE_URL}/discounts/eligible?store_id=${storeId}&cart_amount=${total}&application_type=COUPON`, {
-          headers: storeScopedHeaders()
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.length > 0) {
-            setIsEligibleForCoupon(true);
-            if (!discountState.couponApplied) {
-              setShowCouponPrompt(true);
-            }
-          } else {
-            setIsEligibleForCoupon(false);
-          }
-        }
+        const res = await fetch(
+          `${BASE_URL}/discounts/eligible?store_id=${storeId}&cart_amount=${total}&application_type=COUPON`,
+          { headers: storeScopedHeaders() },
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const eligible = Array.isArray(data) && data.length > 0;
+        setIsEligibleForCoupon(eligible);
+        if (eligible && !discountState.couponApplied) setShowCouponPrompt(true);
       } catch (err) {
-        console.error("Error fetching eligible coupons", err);
+        console.error('Error fetching eligible coupons', err);
       }
-    };
-    checkEligibleCoupons();
+    })();
   }, [cart.items.length, storeId, total]);
 
   const handleApplyCoupon = async () => {
@@ -183,37 +120,34 @@ function CartPage() {
     setCouponLoading(true);
     setCouponError(null);
     setCouponSuccess(false);
-
     try {
-      const response = await fetch(`${BASE_URL}/discounts/validate`, {
+      const res = await fetch(`${BASE_URL}/discounts/validate`, {
         method: 'POST',
         headers: storeScopedHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
-          application_type: "COUPON",
+          application_type: 'COUPON',
           code: couponCode.trim(),
-          store_id: parseInt(storeId),
-          cart_amount: total
-        })
+          store_id: parseInt(storeId, 10),
+          cart_amount: total,
+        }),
       });
-
-      const data = await response.json();
-
-      if (response.ok && data.valid) {
+      const data = await res.json();
+      if (res.ok && data.valid) {
         setDiscountState({
           couponApplied: true,
           discountId: data.discount_id,
           discountCode: couponCode.trim(),
           discountType: data.discount_type,
           discountValue: data.discount_value,
-          discountAmount: data.discount_amount
+          discountAmount: data.discount_amount,
         });
         setCouponSuccess(true);
         setShowCouponInput(false);
         setTimeout(() => setCouponSuccess(false), 3000);
       } else {
-        setCouponError(data.message || 'Invalid Coupon');
+        setCouponError(data.message || 'Invalid coupon');
       }
-    } catch (err) {
+    } catch {
       setCouponError('Failed to validate coupon. Please try again.');
     } finally {
       setCouponLoading(false);
@@ -221,421 +155,247 @@ function CartPage() {
   };
 
   const handleRemoveCoupon = () => {
-    setDiscountState({
-      couponApplied: false,
-      discountId: null,
-      discountCode: "",
-      discountType: "",
-      discountValue: 0,
-      discountAmount: 0
-    });
+    setDiscountState(NO_DISCOUNT);
     setCouponCode('');
   };
 
-  const handleQuantityUpdate = (index, newQuantity) => {
-    updateQuantity(index, newQuantity);
-  };
-const handleProceedToPayment = async () => {
-  if (cart.items.length === 0) {
-    alert('Your cart is empty!');
-    return;
-  }
+  const handleProceedToPayment = async () => {
+    if (cart.items.length === 0) return;
+    setLoading(true);
+    setError(null);
 
-  console.log("ordertype : ",orderTypePayload )
-  setLoading(true);
-  setError(null);
+    const totalWithTax = breakdown.subtotal + breakdown.tax + takeawayChargesWithTax;
+    const totalWithoutTax = breakdown.subtotal + takeawayChargesWithoutTax;
+    const orderLevelType = orderTypePayload(orderType);
 
-  // Calculate totals
-  const totalWithTax = breakdown.subtotal + breakdown.tax + takeawayChargesWithTax;
-  const totalWithoutTax = breakdown.subtotal + takeawayChargesWithoutTax;
-
-  // Prepare order payload exactly as per API spec
-  const orderPayload = {
-    channel: getCatalogChannel(),
-    order_type: orderTypePayload,
-    items: cart.items.map(item => {
-      const payloadItem = {
-        item_skuid: item.skuCode || item.itemId.toString(),
-        quantity: item.quantity
-      };
-      
-      if (item.selectedCustomizations) {
-        if (item.selectedCustomizations.variation) {
-          payloadItem.variation_id = item.selectedCustomizations.variation.variation_id;
+    const orderPayload = {
+      channel: getCatalogChannel(),
+      order_type: orderLevelType,
+      items: cart.items.map((item) => {
+        const line = { item_skuid: item.skuCode || item.itemId.toString(), quantity: item.quantity };
+        const c = item.selectedCustomizations;
+        if (c?.variation) line.variation_id = c.variation.variation_id;
+        if (c?.addons?.length) {
+          line.addon_items = c.addons.map((a) => ({ addon_item_id: a.addon_item_id, quantity: a.quantity || 1 }));
         }
-        if (item.selectedCustomizations.addons && item.selectedCustomizations.addons.length > 0) {
-          payloadItem.addon_items = item.selectedCustomizations.addons.map(addon => ({
-            addon_item_id: addon.addon_item_id,
-            quantity: addon.quantity || 1
-          }));
-        }
-      }
-      return payloadItem;
-    }),
-  total_amount_include_tax: Math.round(totalWithTax),
-  total_amount_exclude_tax: Math.round(totalWithoutTax),
-  takeaway_charges_without_tax: takeawayChargesWithoutTax,
-  takeaway_charges_with_tax: takeawayChargesWithTax,
-  };
-
-  if (discountState.couponApplied && discountState.discountId) {
-    orderPayload.discount_id = discountState.discountId;
-  }
-
-  console.log('Creating Order:', orderPayload);
-
-  try {
-    const response = await fetch(`${BASE_URL}/orders/`, {
-      method: 'POST',
-      headers: storeScopedHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(orderPayload)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'Failed to create order');
+        if (c?.options?.length) line.options = c.options;
+        if (c?.note) line.note = c.note;
+        const lt = lineType(item, orderType) === 'takeaway' ? 'TAKEAWAY' : 'DINEIN';
+        if (lt !== orderLevelType) line.order_type = lt;
+        return line;
+      }),
+      total_amount_include_tax: Math.round(totalWithTax),
+      total_amount_exclude_tax: Math.round(totalWithoutTax),
+      takeaway_charges_without_tax: takeawayChargesWithoutTax,
+      takeaway_charges_with_tax: takeawayChargesWithTax,
+    };
+    if (discountState.couponApplied && discountState.discountId) {
+      orderPayload.discount_id = discountState.discountId;
     }
 
-    const result = await response.json();
-    console.log('Order Created:', result);
-    
-    // API returns: { order_id, total_amount_include_tax, total_amount_exclude_tax }
-    navigate('/payment', { 
-      state: { 
-        KDSInvoiceId: result.kds_invoice_id,
-        orderId: result.order_id,
-        payment_status: result.payment_status,
-        totalAmount: result.total_amount_include_tax,
-        orderDetails: {
-          items: cart.items,
-          subtotal: breakdown.subtotal,
-          tax: breakdown.tax,
-          takeawayChargeWithoutTax: takeawayChargesWithoutTax,
-          takeawayTax: takeawayTax,
-          takeawayChargeWithTax: takeawayChargesWithTax,
-          total: totalWithTax,
-          discountAmount: result.discount_amount || discountState.discountAmount,
-          discountCode: result.discount_code || discountState.discountCode,
-        }
-      } 
-    });
-    
-    // Clear cart after successful order creation
-    clearCart();
+    try {
+      const res = await fetch(`${BASE_URL}/orders/`, {
+        method: 'POST',
+        headers: storeScopedHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(orderPayload),
+      });
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || errorData.detail || 'Failed to create order');
+      }
+      const result = await res.json();
+      navigate('/payment', {
+        state: {
+          KDSInvoiceId: result.kds_invoice_id,
+          orderId: result.order_id,
+          payment_status: result.payment_status,
+          totalAmount: result.total_amount_include_tax,
+          orderDetails: {
+            items: cart.items,
+            subtotal: breakdown.subtotal,
+            tax: breakdown.tax,
+            takeawayChargeWithoutTax: takeawayChargesWithoutTax,
+            takeawayTax,
+            takeawayChargeWithTax: takeawayChargesWithTax,
+            total: totalWithTax,
+            discountAmount: result.discount_amount || discountState.discountAmount,
+            discountCode: result.discount_code || discountState.discountCode,
+          },
+        },
+      });
+      clearCart();
+    } catch (err) {
+      console.error('Error creating order:', err);
+      setError(err.message || 'Failed to process your order. Please try again.');
+      setLoading(false);
+      setTimeout(() => setError(null), 5000);
+    }
+  };
 
-  } catch (error) {
-    console.error('Error creating order:', error);
-    setError(error.message || 'Failed to process your order. Please try again.');
-    setLoading(false);
-    
-    setTimeout(() => setError(null), 5000);
-  }
-};
-
-
-
+  const count = cart.items.reduce((n, it) => n + it.quantity, 0);
 
   return (
-    <div className="cart-root">
-      {showCouponPrompt && (
-        <div className="coupon-modal-overlay">
-          <div className="coupon-modal-modern">
-            <button className="coupon-modal-close" onClick={() => setShowCouponPrompt(false)}>
-              <X size={24} />
+    <div className="ktr ktr-screen checkout">
+      <div className="topbar">
+        <div className="topbar-in wrap">
+          <button type="button" className="restart" onClick={() => navigate('/category', { state: { orderType } })}>
+            ← Add more
+          </button>
+          <span className="topbar-title">Your order</span>
+          <span className="spacer" />
+          <span className="chip-type">{orderTypeLabel(orderType)}</span>
+        </div>
+      </div>
+      <div className="topbar-plaid" />
+
+      <main className="co wrap">
+        {cart.items.length === 0 ? (
+          <section className="panel center-msg">
+            <h2>Your order is empty</h2>
+            <button type="button" className="btn primary" onClick={() => navigate('/category', { state: { orderType } })}>
+              Browse the menu
             </button>
-            <div className="coupon-modal-icon-wrapper">
-              <Ticket size={36} className="coupon-modal-icon" />
-            </div>
-            <h2 className="coupon-modal-title">Have a Coupon?</h2>
-            <p className="coupon-modal-subtitle">You have eligible discounts. Would you like to apply one now?</p>
-            <div className="coupon-modal-actions-vertical">
-              <button className="coupon-btn-primary" onClick={() => { setShowCouponPrompt(false); setShowCouponInput(true); }}>
-                Yes, Enter Code
+          </section>
+        ) : (
+          <>
+            <section className="panel">
+              <h2>
+                {count} {count === 1 ? 'item' : 'items'}
+                {orderType === 'mixed' && <small> · tap to switch eat here / take away</small>}
+              </h2>
+              <div className="lines">
+                {cart.items.map((item, idx) => {
+                  const mm = matchMenuItem(meta, item.itemName);
+                  const img = item.imageURL || imageUrl(mm?.image);
+                  const { base, tax } = unitPrices(item);
+                  const c = item.selectedCustomizations || {};
+                  const parcel = lineType(item, orderType) === 'takeaway';
+                  return (
+                    <div key={item.cartId || idx} className={`ln ${parcel && orderType === 'mixed' ? 'is-parcel' : ''}`}>
+                      <span className={`ln-th ${img ? '' : 'pl'}`} style={img ? { backgroundImage: `url(${img})` } : undefined} />
+                      <div className="ln-main">
+                        <b>{item.itemName}</b>
+                        <div className="mods">
+                          {c.variation && <span className="mod soft">{c.variation.name}</span>}
+                          {(c.addons || []).map((a) => (
+                            <span key={a.addon_item_id} className="mod soft">+ {a.name}</span>
+                          ))}
+                          {(c.options || []).map((o) => (
+                            <span key={o} className="mod">{o}</span>
+                          ))}
+                        </div>
+                        {c.note && <div className="note">“{c.note}”</div>}
+                      </div>
+                      <span className="price">₹{((base + tax) * item.quantity).toFixed(0)}</span>
+                      <div className="ctl">
+                        <div className="step">
+                          <button
+                            type="button"
+                            aria-label="One less"
+                            disabled={loading}
+                            onClick={() => (item.quantity <= 1 ? removeItem(idx) : updateQuantity(idx, item.quantity - 1))}
+                          >
+                            {item.quantity <= 1 ? '🗑' : '−'}
+                          </button>
+                          <output>{item.quantity}</output>
+                          <button type="button" aria-label="One more" disabled={loading} onClick={() => updateQuantity(idx, item.quantity + 1)}>
+                            +
+                          </button>
+                        </div>
+                        {orderType === 'mixed' && (
+                          <div className="split" role="group" aria-label="Eat here or take away">
+                            <button type="button" aria-pressed={!parcel} onClick={() => setLineType(idx, 'dine-in')}>Eat here</button>
+                            <button type="button" aria-pressed={parcel} onClick={() => setLineType(idx, 'takeaway')}>Take away</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="panel summary">
+              <div className="sum-row"><span>Items</span><span>₹{breakdown.subtotal.toFixed(2)}</span></div>
+              {takeawayChargesWithoutTax > 0 && (
+                <div className="sum-row">
+                  <span>Take-away packing{orderType === 'mixed' ? ` (${parcelQty} items)` : ''}</span>
+                  <span>₹{takeawayChargesWithoutTax.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="sum-row"><span>Taxes</span><span>₹{(breakdown.tax + takeawayTax).toFixed(2)}</span></div>
+              {discountState.couponApplied && (
+                <div className="sum-row save">
+                  <span>Coupon {discountState.discountCode}</span>
+                  <span>−₹{discountState.discountAmount.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="total-row">
+                <span>To pay</span>
+                <span className="price">₹{finalPayableAmount.toFixed(2)}</span>
+              </div>
+
+              {couponSuccess && (
+                <div className="coupon-ok">
+                  {discountState.discountCode} applied. You saved ₹{discountState.discountAmount.toFixed(2)}.
+                </div>
+              )}
+              {discountState.couponApplied && !couponSuccess && (
+                <button type="button" className="btn ghost" onClick={handleRemoveCoupon}>Remove coupon</button>
+              )}
+              {isEligibleForCoupon && !discountState.couponApplied && (
+                <button type="button" className="btn ghost" onClick={() => setShowCouponInput(true)}>Have a coupon?</button>
+              )}
+
+              {error && <div className="err-box" role="alert">{error}</div>}
+
+              <button type="button" className="btn primary big" disabled={loading} onClick={handleProceedToPayment}>
+                <span>{loading ? 'Placing your order…' : 'Continue to payment'}</span>
+                <span className="price">₹{finalPayableAmount.toFixed(0)}</span>
               </button>
-              <button className="coupon-btn-text" onClick={() => setShowCouponPrompt(false)}>
-                Maybe Later
+            </section>
+          </>
+        )}
+      </main>
+
+      {showCouponPrompt && !showCouponInput && (
+        <div className="scrim" onClick={() => setShowCouponPrompt(false)} role="presentation">
+          <div className="dialog" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Coupon">
+            <h3>Have a coupon?</h3>
+            <p>You have discounts available. Apply one now?</p>
+            <div className="row">
+              <button type="button" className="btn primary" onClick={() => { setShowCouponPrompt(false); setShowCouponInput(true); }}>
+                Yes, enter code
               </button>
+              <button type="button" className="btn soft" onClick={() => setShowCouponPrompt(false)}>Maybe later</button>
             </div>
           </div>
         </div>
       )}
 
       {showCouponInput && !discountState.couponApplied && (
-        <div className="coupon-modal-overlay">
-          <div className="coupon-modal-modern">
-            <button className="coupon-modal-close" onClick={() => setShowCouponInput(false)}>
-              <X size={24} />
-            </button>
-            <div className="coupon-modal-icon-wrapper">
-              <Ticket size={36} className="coupon-modal-icon" />
-            </div>
-            <h2 className="coupon-modal-title">Enter Coupon Code</h2>
-            <p className="coupon-modal-subtitle">Type your code below to claim your discount.</p>
-            
-            <div className="coupon-input-modern-group">
-              <input 
-                type="text" 
-                className="coupon-input-modern" 
-                value={couponCode} 
-                onChange={(e) => setCouponCode(e.target.value)}
-                placeholder="e.g. STORE10"
-                disabled={couponLoading}
-              />
-            </div>
-            {couponError && <div className="coupon-error-modern">{couponError}</div>}
-            
-            <div className="coupon-modal-actions-vertical" style={{ marginTop: '0.5rem' }}>
-              <button className="coupon-btn-primary" onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()}>
-                {couponLoading ? <Loader size={20} className="spinning" /> : 'Apply Discount'}
+        <div className="scrim" onClick={() => setShowCouponInput(false)} role="presentation">
+          <div className="dialog" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Enter coupon code">
+            <h3>Enter coupon code</h3>
+            <input
+              className="note-in"
+              type="text"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              placeholder="e.g. STORE10"
+              disabled={couponLoading}
+              autoFocus
+            />
+            {couponError && <div className="err-box">{couponError}</div>}
+            <div className="row">
+              <button type="button" className="btn primary" onClick={handleApplyCoupon} disabled={couponLoading || !couponCode.trim()}>
+                {couponLoading ? 'Checking…' : 'Apply'}
               </button>
+              <button type="button" className="btn soft" onClick={() => setShowCouponInput(false)}>Cancel</button>
             </div>
           </div>
         </div>
       )}
-
-      <header className="nav-header">
-  {/* <div className="cart-header-content"> */}
-    <span 
-      className="back-button" 
-      onClick={() => navigate('/category')}
-      style={{ cursor: "pointer" }}
-    >
-      <IoMdArrowRoundBack size={25}/>
-      
-    </span>
-      <h1 className="nav-title">Your Cart</h1>
-  {/* </div> */}
-</header>
-
-
-      <main className="cart-content">
-        {couponSuccess && (
-          <div className="coupon-success-card">
-            <CheckCircle className="coupon-success-icon" />
-            <div>
-              <div style={{ fontWeight: 'bold' }}>Coupon Applied Successfully</div>
-              <div style={{ fontSize: '0.9rem' }}>{discountState.discountCode} applied. You saved ₹{discountState.discountAmount.toFixed(2)}</div>
-            </div>
-          </div>
-        )}
-
-        {discountState.couponApplied && !couponSuccess && (
-          <div className="coupon-applied-badge">
-            <span className="coupon-applied-text">Coupon Applied: {discountState.discountCode} (-₹{discountState.discountAmount.toFixed(2)})</span>
-            <button className="coupon-remove-btn" onClick={handleRemoveCoupon}>Remove</button>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div style={{
-            background: 'rgba(244, 67, 54, 0.1)',
-            border: '1px solid rgba(244, 67, 54, 0.3)',
-            color: '#C62828',
-            padding: '1rem 1.5rem',
-            borderRadius: 'var(--radius-md)',
-            marginBottom: '1.5rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <span>⚠️</span>
-            <span>{error}</span>
-          </div>
-        )}
-
-        <div className="cart-items-container">
-          {cart.items.length === 0 ? (
-            <div className="empty-cart">
-              <p>Your cart is empty</p>
-              <button 
-                onClick={() => navigate('/category')}
-                style={{
-                  marginTop: '1rem',
-                  padding: '0.75rem 2rem',
-                  background: 'var(--secondary-gradient)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                Start Shopping
-              </button>
-            </div>
-          ) : (
-            cart.items.map((item, idx) => {
-              const itemTotal = calculateItemTotal(item);
-              const pricePerUnit = item.pricePerUnit || ((item.price || 0) + (item.taxAmount || 0));
-              
-              return (
-               <div className="cart-item-card" key={idx}>
-  <div className="cart-item-top">
-    <img 
-      src={item.imageURL ||  './placeholder.jpg' } 
-      alt={item.itemName} 
-      className="cart-item-img"
-      onError={(e) => {
-        e.target.src = '/images/placeholder.jpg';
-      }}
-    />
-    <div className="cart-item-info">
-      <div className="cart-item-title">{item.itemName}</div>
-      {item.selectedCustomizations?.variation && (
-         <div className="cart-item-variation" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-           Variant: {item.selectedCustomizations.variation.name}
-         </div>
-      )}
-      {item.selectedCustomizations?.addons?.length > 0 && (
-         <div className="cart-item-addons" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-           Add-ons: {item.selectedCustomizations.addons.map(a => a.name).join(', ')}
-         </div>
-      )}
-      <div className="cart-item-price-info">
-        {/* Customized base prices handled dynamically now */}
-      </div>
-    </div>
-  </div>
-  
-  <button 
-    className="delete-btn" 
-    onClick={() => removeItem(idx)}
-    disabled={loading}
-  >
-    <Trash size={16} />
-  </button>
-  
-  <div className="cart-item-bottom">
-    <div className="qty-controls">
-      <button
-        className="qty-btn"
-        onClick={() => handleQuantityUpdate(idx, Math.max(1, item.quantity - 1))}
-        disabled={item.quantity <= 1 || loading}
-      >
-        <Minus size={16} />
-      </button>
-      <span className="qty">{item.quantity}</span>
-      <button
-        className="qty-btn"
-        onClick={() => handleQuantityUpdate(idx, item.quantity + 1)}
-        disabled={loading}
-      >
-        <Plus size={16} />
-      </button>
-    </div>
-    
-    <div className="cart-item-price">
-      <span className="item-each-price">
-        ₹{pricePerUnit.toFixed(2)} each
-      </span>
-      <span className="item-total-price">
-        ₹{itemTotal.toFixed(2)}
-      </span>
-    </div>
-  </div>
-</div>
-
-              );
-            })
-          )}
-        </div>
-        
-        {cart.items.length > 0 && (
-          <div className="cart-summary-card">
-            <div className="summary-row">
-              <span>Base Amount:</span>
-              <span>₹{breakdown.subtotal.toFixed(2)}</span>
-            </div>
-            {orderTypePayload === 'TAKEAWAY' && takeawayChargesWithoutTax > 0 && (
-              <div className="summary-row">
-                <span>Takeaway Charge:</span>
-                <span>₹{takeawayChargesWithoutTax.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="summary-row">
-              <span>Total Tax:</span>
-              <span>₹{(breakdown.tax + takeawayTax).toFixed(2)}</span>
-            </div>
-            {discountState.couponApplied && (
-              <div className="summary-row" style={{ color: '#2e7d32', fontWeight: 'bold' }}>
-                <span>Coupon Discount ({discountState.discountCode}):</span>
-                <span>-₹{discountState.discountAmount.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="summary-row total">
-              <span>Final Amount:</span>
-              <span>₹{finalPayableAmount.toFixed(2)}</span>
-            </div>
-            
-            {isEligibleForCoupon && !discountState.couponApplied && (
-              <button 
-                onClick={() => setShowCouponInput(true)}
-                style={{
-                  width: '70%',
-                  margin: '1.25rem auto 0 auto',
-                  padding: '0.875rem',
-                  background: 'rgba(212, 175, 55, 0.1)',
-                  color: 'var(--gold-dark)',
-                  border: '1.5px dashed var(--gold-dark)',
-                  borderRadius: '12px',
-                  fontWeight: 'bold',
-                  fontSize: '1rem',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                  transition: 'all 0.2s',
-                }}
-                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.2)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(212, 175, 55, 0.1)'; e.currentTarget.style.transform = 'translateY(0)'; }}
-              >
-                <Ticket size={20} />
-                Apply Coupon Code
-              </button>
-            )}
-
-            <button 
-              className="payment-btn"
-              onClick={handleProceedToPayment}
-              disabled={loading}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.75rem',
-                opacity: loading ? 0.8 : 1,
-                cursor: loading ? 'not-allowed' : 'pointer'
-              }}
-            >
-              {loading ? (
-                <>
-                  <Loader size={20} className="spinning" />
-                  <span>Processing Order...</span>
-                </>
-              ) : (
-                <>
-                  <span>Proceed to Payment</span>
-                  {/* <span style={{ fontWeight: 'bold' }}>₹{total.toFixed(2)}</span> */}
-                </>
-              )}
-            </button>
-
-            {loading && (
-              <div style={{
-                textAlign: 'center',
-                marginTop: '1rem',
-                fontSize: '0.9rem',
-                color: 'var(--text-secondary)'
-              }}>
-                Please wait while we process your order...
-              </div>
-            )}
-          </div>
-        )}
-      </main>
     </div>
   );
 }

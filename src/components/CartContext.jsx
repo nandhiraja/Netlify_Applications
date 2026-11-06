@@ -59,6 +59,30 @@ export const CartProvider = ({ children }) => {
     });
   };
 
+  /** Mixed orders: move one line between eat-here and parcel (merges into an identical line). */
+  const setLineType = (index, type) => {
+    setCart(prevCart => {
+      const items = [...prevCart.items];
+      const line = items[index];
+      if (!line) return prevCart;
+      const parcel = type === 'takeaway';
+      const updated = {
+        ...line,
+        lineType: type,
+        selectedCustomizations: { ...(line.selectedCustomizations || {}), parcel },
+      };
+      const twin = items.findIndex((it, i) => i !== index && it.itemId === updated.itemId &&
+        JSON.stringify(it.selectedCustomizations) === JSON.stringify(updated.selectedCustomizations));
+      if (twin > -1) {
+        items[twin] = { ...items[twin], quantity: items[twin].quantity + updated.quantity };
+        items.splice(index, 1);
+      } else {
+        items[index] = updated;
+      }
+      return { items };
+    });
+  };
+
   const clearCart = () => {
     setCart({ items: [] });
   };
@@ -80,6 +104,7 @@ export const CartProvider = ({ children }) => {
         addItem, 
         removeItem, 
         updateQuantity, 
+        setLineType,
         clearCart,
         getCartTotal 
       }}
