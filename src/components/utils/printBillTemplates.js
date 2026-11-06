@@ -1,3 +1,4 @@
+import { kitchenTags } from './kitchenNotes';
 // Coffee Category ID (from backend) - Only coffee, not beverages
 const COFFEE_CATEGORY_ID = "9534540";
 
@@ -423,6 +424,7 @@ export const generateFoodKOT = (orderId, kot_code, orderDetails, orderType, stor
               if (item.selectedCustomizations.addons && item.selectedCustomizations.addons.length > 0) {
                   parts.push(`[Add: ${item.selectedCustomizations.addons.map(a => a.name).join(', ')}]`);
               }
+              parts.push(...kitchenTags(item));
               if (parts.length > 0) customText = `<br/><span style="font-size: 10px; font-weight: bold;">${parts.join(' ')}</span>`;
           }
           return `
@@ -605,6 +607,7 @@ export const generateCoffeeKOT = (orderId, kot_code, orderDetails, orderType, st
               if (item.selectedCustomizations.addons && item.selectedCustomizations.addons.length > 0) {
                   parts.push(`[Add: ${item.selectedCustomizations.addons.map(a => a.name).join(', ')}]`);
               }
+              parts.push(...kitchenTags(item));
               if (parts.length > 0) customText = `<br/><span style="font-size: 9px; font-weight: normal;">${parts.join(' ')}</span>`;
           }
           return `

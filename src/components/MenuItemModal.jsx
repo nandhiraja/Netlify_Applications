@@ -1,326 +1,214 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
-import { X, Plus, Minus } from 'lucide-react';
-import './Styles/MenuItemModal.css';
+import '../styles/ktr.css';
 import { useCart } from './CartContext';
+import { activeVariations, rupee } from '../lib/catalog';
+import { imageUrl } from '../lib/menuMeta';
 
-const MenuItemModal = ({ item, addonGroups = [], onClose, onAddToCart }) => {
+/**
+ * Item sheet: photo, story, Petpooja variations and add-on groups (min/max rules), free-text
+ * kitchen options and a note, and — for mixed orders — eat here or parcel.
+ */
+const MenuItemModal = ({ item, menuItem = null, addonGroups = [], orderType = 'dine-in', onClose, onAddToCart }) => {
   const { addItem } = useCart();
-
-  const [quantity, setQuantity] = useState(1);
-  const [currentTotalPrice, setCurrentTotalPrice] = useState(0);
-  const [totalTax, setTotalTax] = useState(0);
-
-  // New state for Variations and Addons
-  const [selectedVariation, setSelectedVariation] = useState(null);
-  const [selectedAddons, setSelectedAddons] = useState({});
-
-  // Only active variations, in the order configured in the POS
-  const variations = (item?.itemallowvariation && Array.isArray(item.variation))
-    ? item.variation
-        .filter(v => v.active === undefined || String(v.active) === '1')
-        .sort((a, b) => (parseInt(a.variationrank) || 0) - (parseInt(b.variationrank) || 0))
-    : [];
+  const variations = activeVariations(item);
   const hasVariants = variations.length > 0;
 
-  // Reset state when item changes - the user must pick a variation explicitly
-  useEffect(() => {
-    setSelectedVariation(null);
-    setSelectedAddons({});
-    setQuantity(1);
-  }, [item]);
+  const [quantity, setQuantity] = useState(1);
+  const [selectedVariation, setSelectedVariation] = useState(null);
+  const [selectedAddons, setSelectedAddons] = useState({});
+  const [options, setOptions] = useState([]);
+  const [note, setNote] = useState('');
+  const [lineType, setLineType] = useState('dine-in');
 
-  const handleVariationSelect = (variation) => {
-    setSelectedVariation(variation);
-  };
+  // Add-on groups configured on this item, with their selection rules.
+  const groups = useMemo(() => {
+    if (!item?.itemallowaddon || !Array.isArray(item.addon)) return [];
+    return item.addon
+      .map((def) => {
+        const group = addonGroups.find((g) => g.addongroupid === def.addon_group_id);
+        if (!group?.addongroupitems?.length) return null;
+        const min = parseInt(def.addon_item_selection_min || 0, 10);
+        const max = parseInt(def.addon_item_selection_max || 0, 10);
+        return { group, min, max, radio: max === 1 };
+      })
+      .filter(Boolean);
+  }, [item, addonGroups]);
 
-  const handleAddonToggle = (addonGroupId, addonItem, maxSelection, isRadio) => {
-    setSelectedAddons(prev => {
-      const groupAddons = prev[addonGroupId] || [];
-      const isSelected = groupAddons.some(a => a.addonitemid === addonItem.addonitemid);
-      
-      if (isSelected) {
-        // If radio, do not toggle off when clicking the selected one
-        if (isRadio) return prev;
-        return {
-          ...prev,
-          [addonGroupId]: groupAddons.filter(a => a.addonitemid !== addonItem.addonitemid)
-        };
-      } else {
-        if (isRadio) {
-          return { ...prev, [addonGroupId]: [addonItem] };
-        }
-        // Check maxSelection (0 means no limit typically, but let's assume if it exists and > 0 we enforce it)
-        if (maxSelection > 0 && groupAddons.length >= maxSelection) {
-          return prev;
-        }
-        return {
-          ...prev,
-          [addonGroupId]: [...groupAddons, addonItem]
-        };
-      }
+  const toggleAddon = ({ group, max, radio }, addonItem) => {
+    const gid = group.addongroupid;
+    setSelectedAddons((prev) => {
+      const cur = prev[gid] || [];
+      const on = cur.some((a) => a.addonitemid === addonItem.addonitemid);
+      if (on) return radio ? prev : { ...prev, [gid]: cur.filter((a) => a.addonitemid !== addonItem.addonitemid) };
+      if (radio) return { ...prev, [gid]: [addonItem] };
+      if (max > 0 && cur.length >= max) return prev;
+      return { ...prev, [gid]: [...cur, addonItem] };
     });
   };
 
-  // Calculate total price with taxes
-  const calculateTotalPrice = useCallback(() => {
-    if (!item) return 0;
-    
-    let basePrice = item.price;
-    if (hasVariants) {
-      basePrice = selectedVariation ? (parseFloat(selectedVariation.price) || 0) : 0;
-    }
-    
-    let addonsTotal = 0;
-    Object.values(selectedAddons).forEach(addonArray => {
-      addonArray.forEach(addon => {
-        addonsTotal += parseFloat(addon.addonitem_price) || 0;
-      });
-    });
+  const toggleOption = (opt) =>
+    setOptions((cur) => (cur.includes(opt) ? cur.filter((o) => o !== opt) : [...cur, opt]));
 
-    const priceBeforeTax = basePrice + addonsTotal;
-    
-    // Calculate tax amount
-    let taxAmount = 0;
-    if (item.taxes && item.taxes.length > 0) {
-      taxAmount = item.taxes.reduce((sum, tax) => {
-        return sum + (priceBeforeTax * tax.percentage / 100);
-      }, 0);
-    }
-    
-    setTotalTax(taxAmount);
-    return (priceBeforeTax + taxAmount) * quantity;
-  }, [item, quantity, selectedVariation, selectedAddons, hasVariants]);
+  const basePrice = hasVariants ? (selectedVariation ? parseFloat(selectedVariation.price) || 0 : 0) : item.price;
+  const addonsTotal = Object.values(selectedAddons)
+    .flat()
+    .reduce((s, a) => s + (parseFloat(a.addonitem_price) || 0), 0);
+  const priceBeforeTax = basePrice + addonsTotal;
+  const taxPerUnit = (item.taxes || []).reduce((s, t) => s + (priceBeforeTax * t.percentage) / 100, 0);
+  const total = (priceBeforeTax + taxPerUnit) * quantity;
 
-  useEffect(() => {
-    if (item) {
-      setCurrentTotalPrice(calculateTotalPrice());
-    }
-  }, [item, calculateTotalPrice]);
+  const unmetGroup = groups.find((g) => g.min > 0 && (selectedAddons[g.group.addongroupid]?.length || 0) < g.min);
+  const blocked = (hasVariants && !selectedVariation) || Boolean(unmetGroup);
 
-  useEffect(() => {
-    setQuantity(1);
-  }, [item]);
-
-  if (!item) return null;
-
-  const handleQuantityChange = (amount) => {
-    setQuantity(prev => Math.max(1, prev + amount));
-  };
-
-  const handleAddToCartClick = () => {
-    // Collect selected addons into an array
-    const addon_items = [];
-    Object.values(selectedAddons).forEach(groupAddons => {
-      groupAddons.forEach(addon => {
-        addon_items.push({
-          addon_item_id: addon.addonitemid,
-          quantity: 1, // Addons count as 1 typically
-          name: addon.addonitem_name,
-          price: parseFloat(addon.addonitem_price) || 0,
-        });
-      });
-    });
-
+  const handleAdd = () => {
+    const addon_items = Object.values(selectedAddons)
+      .flat()
+      .map((a) => ({
+        addon_item_id: a.addonitemid,
+        quantity: 1,
+        name: a.addonitem_name,
+        price: parseFloat(a.addonitem_price) || 0,
+      }));
+    const parcel = orderType === 'mixed' && lineType === 'takeaway';
     const orderItem = {
       ...item,
       quantity,
-      finalPrice: currentTotalPrice,
-      pricePerUnit: (currentTotalPrice / quantity), // Average price per unit overall
+      finalPrice: total,
+      pricePerUnit: total / quantity,
       timestamp: Date.now(),
+      lineType: orderType === 'mixed' ? lineType : undefined,
       selectedCustomizations: {
-        variation: selectedVariation ? {
-          variation_id: selectedVariation.id,
-          name: selectedVariation.name,
-          price: parseFloat(selectedVariation.price) || 0
-        } : null,
-        addons: addon_items
-      }
+        variation: selectedVariation
+          ? { variation_id: selectedVariation.id, name: selectedVariation.name, price: parseFloat(selectedVariation.price) || 0 }
+          : null,
+        addons: addon_items,
+        options,
+        note: note.trim() || null,
+        parcel,
+      },
     };
-    
-    console.log('Adding to cart:', orderItem);
     onAddToCart(orderItem);
-    addItem(orderItem); 
+    addItem(orderItem);
     onClose();
   };
 
-  const isAddToCartDisabled = hasVariants && !selectedVariation;
-
-  const basePrice = hasVariants
-    ? (selectedVariation ? parseFloat(selectedVariation.price) || 0 : 0)
-    : item.price;
-  let addonsTotal = 0;
-  Object.values(selectedAddons).forEach(addonArray => {
-    addonArray.forEach(addon => {
-      addonsTotal += parseFloat(addon.addonitem_price) || 0;
-    });
-  });
-  
-  const priceBeforeTax = basePrice + addonsTotal;
-  const taxPerUnit = totalTax;
-  const pricePerUnit = priceBeforeTax + taxPerUnit;
-  const subtotal = priceBeforeTax * quantity;
-  const totalTaxAmount = taxPerUnit * quantity;
-  const finalAmount = currentTotalPrice;
+  const img = item.imageURL || imageUrl(menuItem?.image);
+  const kitchenOptions = menuItem?.options || [];
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-        
-        {/* Modal Header */}
-        <div className="modal-header">
-          <button className="modal-close-btn" onClick={onClose}>
-            <X size={24} />
-          </button>
-          <div className="modal-header-content">
-            <h2 className="modal-title">{item.itemName}</h2>
-            
-            {/* Display tags */}
-             <div className='price-count-container'>
-              <div className="modal-tags">                  
-                  <span className="price-highlight price-amount modal-tag">₹{pricePerUnit.toFixed(2)}</span>
-                </div>
-            
-            
-            <div className="quantity-selector">
-              <button
-                onClick={() => handleQuantityChange(-1)}
-                className="quantity-btn"
-                disabled={quantity <= 1}
-              >
-                <Minus size={20} />
-              </button>
-              <span className="quantity-display">{quantity}</span>
-              <button
-                onClick={() => handleQuantityChange(1)}
-                className="quantity-btn"
-              >
-                <Plus size={20} />
-              </button>
-
-
-            </div>
-            </div>
-
-
-          </div>
+    <div className="ktr scrim" onClick={onClose} role="presentation">
+      <div className="sheet" role="dialog" aria-label={item.itemName} onClick={(e) => e.stopPropagation()}>
+        <div className={`ph ${img ? '' : 'pl'}`} style={img ? { backgroundImage: `url(${img})` } : undefined}>
+          {!img && item.itemName.split(' ')[0]}
+          <button type="button" className="close" onClick={onClose} aria-label="Close">×</button>
         </div>
+        <div className="bd">
+          <div>
+            <div className="sheet-tags">
+              {menuItem?.signature && <span className="tag sig">Signature</span>}
+              {menuItem?.traditional && <span className="tag trad">Traditional</span>}
+            </div>
+            <h3>{item.itemName}</h3>
+          </div>
+          {(menuItem?.lead || item.itemDescription) && <p className="lead">{menuItem?.lead || item.itemDescription}</p>}
+          {menuItem?.fact && (
+            <div className="fact">
+              <b>Did you know? </b>
+              {menuItem.fact}
+            </div>
+          )}
 
-        <div className="modal-body">
-          {/* Variations Section */}
           {hasVariants && (
-            <div className="modal-section modal-variations">
-              <h3 className="section-title">Select Variant <span className="required-star">*</span></h3>
-              <div className="variation-options">
-                {variations.map(vr => (
-                  <label key={vr.id} className={`variation-label ${selectedVariation?.id === vr.id ? 'selected' : ''}`}>
-                    <input 
-                      type="radio" 
-                      name="variation" 
-                      value={vr.id} 
-                      checked={selectedVariation?.id === vr.id}
-                      onChange={() => handleVariationSelect(vr)}
-                    />
-                    <span className="variation-name">{vr.name}</span>
-                    <span className="variation-price">₹{parseFloat(vr.price || 0).toFixed(2)}</span>
-                  </label>
+            <div>
+              <h4>Choose one <span className="h-sub">Required</span></h4>
+              <div className="mod-grid">
+                {variations.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    className="mod-btn"
+                    aria-pressed={selectedVariation?.id === v.id}
+                    onClick={() => setSelectedVariation(v)}
+                  >
+                    {v.name} · {rupee(v.price)}
+                  </button>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Add-ons Section */}
-          {item.itemallowaddon && item.addon?.length > 0 && (
-            <div className="modal-section modal-addons">
-              {item.addon.map(addonDef => {
-                const group = addonGroups.find(g => g.addongroupid === addonDef.addon_group_id);
-                if (!group || !group.addongroupitems || group.addongroupitems.length === 0) return null;
-                
-                const minSel = parseInt(addonDef.addon_item_selection_min || 0);
-                const maxSel = parseInt(addonDef.addon_item_selection_max || 0);
-                const isRadio = maxSel === 1;
-
-                return (
-                  <div key={group.addongroupid} className="addon-group">
-                    <h3 className="section-title">
-                      {group.addongroup_name} 
-                      {/* {maxSel > 0 && <span className="selection-hint">(Choose up to {maxSel})</span>} */}
-                    </h3>
-                    <div className="addon-options">
-                      {group.addongroupitems.map(addonItem => {
-                        const isSelected = selectedAddons[group.addongroupid]?.some(a => a.addonitemid === addonItem.addonitemid);
-                        return (
-                          <label key={addonItem.addonitemid} className={`addon-label ${isSelected ? 'selected' : ''}`}>
-                            <input 
-                              type={isRadio ? "radio" : "checkbox"} 
-                              name={`addon-${group.addongroupid}`} 
-                              checked={isSelected || false}
-                              onChange={() => handleAddonToggle(group.addongroupid, addonItem, maxSel, isRadio)}
-                              disabled={!isSelected && !isRadio && maxSel > 0 && (selectedAddons[group.addongroupid]?.length || 0) >= maxSel}
-                            />
-                            <span className="addon-name">{addonItem.addonitem_name}</span>
-                            {parseFloat(addonItem.addonitem_price) > 0 && (
-                               <span className="addon-price">₹{parseFloat(addonItem.addonitem_price).toFixed(2)}</span>
-                            )}
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+          {groups.map((g) => (
+            <div key={g.group.addongroupid}>
+              <h4>
+                {g.group.addongroup_name || 'Add-ons'}
+                <span className="h-sub">
+                  {g.min > 0 ? `Pick ${g.min}${g.max > g.min ? `–${g.max}` : ''}` : g.max > 0 ? `Up to ${g.max}` : 'Optional'}
+                </span>
+              </h4>
+              <div className="addon-grid">
+                {g.group.addongroupitems.map((a) => {
+                  const on = (selectedAddons[g.group.addongroupid] || []).some((x) => x.addonitemid === a.addonitemid);
+                  return (
+                    <button key={a.addonitemid} type="button" className={`addon ${on ? 'on' : ''}`} onClick={() => toggleAddon(g, a)}>
+                      <span>
+                        <b>{a.addonitem_name}</b>
+                        <span>{parseFloat(a.addonitem_price) > 0 ? `+ ${rupee(a.addonitem_price)}` : 'Free'}</span>
+                      </span>
+                      <span className="add-sm">{on ? 'Added' : 'Add'}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          )}
-          
-          {/* Tax Breakdown Section */}
-          {item.taxes && item.taxes.length > 0 && (
-            <div className="modal-section">
-              <h3 className="section-title">Tax Information</h3>
-              <div className="tax-details">
-                {item.taxes.map((tax, index) => (
-                  <div key={index} className="tax-item">
-                    <span className="tax-name">{tax.name}</span>
-                    <span className="tax-rate">{tax.percentage}%</span>
-                    <span className="tax-amount">
-                      ₹{(priceBeforeTax * tax.percentage / 100).toFixed(2)}
-                    </span>
-                  </div>
+          ))}
+
+          {kitchenOptions.length > 0 && (
+            <div>
+              <h4>Make it your way <span className="h-sub">Free</span></h4>
+              <div className="mod-grid">
+                {kitchenOptions.map((opt) => (
+                  <button key={opt} type="button" className="mod-btn" aria-pressed={options.includes(opt)} onClick={() => toggleOption(opt)}>
+                    {opt}
+                  </button>
                 ))}
-                <div className="tax-item total-tax">
-                  <span className="tax-name">Total Tax per unit</span>
-                  <span className="tax-amount">₹{taxPerUnit.toFixed(2)}</span>
-                </div>
               </div>
             </div>
           )}
 
+          <div>
+            <h4>Note for the kitchen <span className="h-sub">Optional</span></h4>
+            <input
+              className="note-in"
+              type="text"
+              maxLength={200}
+              placeholder="e.g. no onion, extra chutney"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </div>
+
+          {orderType === 'mixed' && (
+            <div>
+              <h4>For this dish</h4>
+              <div className="split" role="group" aria-label="Eat here or take away">
+                <button type="button" aria-pressed={lineType === 'dine-in'} onClick={() => setLineType('dine-in')}>Eat here</button>
+                <button type="button" aria-pressed={lineType === 'takeaway'} onClick={() => setLineType('takeaway')}>Take away</button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Modal Footer */}
-        <div className="modal-footer">
-          <div className="price-breakdown">
-            <div className="price-row">
-              <span>Base Amount ({quantity} × ₹{priceBeforeTax.toFixed(2)}):</span>
-              <span>₹{subtotal.toFixed(2)}</span>
-            </div>
-            <div className="price-row">
-              <span>Total Tax:</span>
-              <span>₹{totalTaxAmount.toFixed(2)}</span>
-            </div>
-            <div className="price-row total">
-              <span>Final Amount:</span>
-              <span>₹{finalAmount.toFixed(2)}</span>
-            </div>
+        <div className="sheet-foot">
+          <div className="step">
+            <button type="button" onClick={() => setQuantity((q) => Math.max(1, q - 1))} aria-label="One less">−</button>
+            <output>{quantity}</output>
+            <button type="button" onClick={() => setQuantity((q) => q + 1)} aria-label="One more">+</button>
           </div>
-          <div className="footer-actions">
-            <button onClick={onClose} className="cancel-btn">
-              Cancel
-            </button>
-            <button onClick={handleAddToCartClick} className="add-to-cart-btn" disabled={isAddToCartDisabled}>
-              {isAddToCartDisabled ? 'Select a Variant' : 'Add'}
-              {/* {quantity} to Cart :  ₹{finalAmount.toFixed(2)} */}
-            </button>
-          </div>
+          <button type="button" className="btn primary" disabled={blocked} onClick={handleAdd}>
+            <span>{hasVariants && !selectedVariation ? 'Choose an option' : unmetGroup ? `Pick ${unmetGroup.group.addongroup_name || 'add-ons'}` : 'Add to order'}</span>
+            <span className="price">{rupee(total)}</span>
+          </button>
         </div>
       </div>
     </div>
@@ -328,27 +216,12 @@ const MenuItemModal = ({ item, addonGroups = [], onClose, onAddToCart }) => {
 };
 
 MenuItemModal.propTypes = {
-  item: PropTypes.shape({
-    itemId: PropTypes.string.isRequired,
-    itemName: PropTypes.string.isRequired,
-    price: PropTypes.number.isRequired,
-    itemNature: PropTypes.string,
-    categoryId: PropTypes.string.isRequired,
-    skuCode: PropTypes.string,
-    status: PropTypes.string,
-    measuringUnit: PropTypes.string,
-    itemTagIds: PropTypes.arrayOf(PropTypes.string),
-    taxTypeIds: PropTypes.arrayOf(PropTypes.string),
-    tags: PropTypes.arrayOf(PropTypes.string),
-    taxes: PropTypes.arrayOf(PropTypes.shape({
-      taxTypeId: PropTypes.string,
-      name: PropTypes.string,
-      percentage: PropTypes.number
-    })),
-    taxAmount: PropTypes.number,
-  }).isRequired,
+  item: PropTypes.object.isRequired,
+  menuItem: PropTypes.object,
+  addonGroups: PropTypes.array,
+  orderType: PropTypes.string,
   onClose: PropTypes.func.isRequired,
-  onAddToCart: PropTypes.func.isRequired,
+  onAddToCart: PropTypes.func,
 };
 
 export default MenuItemModal;

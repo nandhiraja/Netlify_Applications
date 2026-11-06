@@ -1,3 +1,4 @@
+import { kitchenTags } from './kitchenNotes';
 // Mapping category IDs to specific counter names.
 // Only these get dedicated stations; all other categories → KITCHEN COUNTER (fallback in getCounterNameForCategory).
 export const KOT_CATEGORY_CONFIG = {
@@ -420,6 +421,7 @@ export const generateDynamicBackendKOT = (orderId, kot_code, orderType, storeNam
               if (item.selectedCustomizations.addons && item.selectedCustomizations.addons.length > 0) {
                   parts.push(`[Add: ${item.selectedCustomizations.addons.map(a => a.name).join(', ')}]`);
               }
+              parts.push(...kitchenTags(item));
               if (parts.length > 0) customText = `<br/><span style="font-size: 10px; font-weight: bold;">${parts.join(' ')}</span>`;
           }
           return `

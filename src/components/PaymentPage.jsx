@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { CreditCard, QrCode, Loader, Check, Wallet, Smartphone } from 'lucide-react';
+import { CreditCard, QrCode, Wallet, Smartphone } from 'lucide-react';
+import '../styles/ktr.css';
 import './Styles/PaymentPage.css';
 import { useCart } from './CartContext';
 import TokenSuccess from './TokenSuccess';
-import { IoMdArrowRoundBack } from "react-icons/io";
 
 import { getKioskBaseUrl, defaultFetchHeaders } from '../utils/kioskApi';
+import { orderTypeLabel, orderTypePrintLabel } from '../lib/orderType';
+import { imageUrl, matchMenuItem, useMenuMeta } from '../lib/menuMeta';
 
 const BASE_URL = getKioskBaseUrl();
 
@@ -15,6 +17,7 @@ const PaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { clearCart } = useCart();
+  const meta = useMenuMeta();
 
   // Extract order data from location state
   const { payment_status, orderId, totalAmount, orderDetails } = location.state || {};
@@ -24,7 +27,6 @@ const PaymentPage = () => {
   const [showTokenPage, setShowTokenPage] = useState(false);
   const [KDSInvoiceId, setKDSInvoiceId] = useState(null);
   const [selectedMethod, setSelectedMethod] = useState(null);
-  const [expandedMethod, setExpandedMethod] = useState(null);
   const [qrData, setQrData] = useState(null);
   const [edcData, setEdcData] = useState(null);
   const [zomatoData, setZomatoData] = useState(null);
@@ -78,7 +80,7 @@ const PaymentPage = () => {
   // Redirect if no order data
   if (!orderId || !orderDetails) {
     return (
-      <div className="payment-root">
+      <div className="ktr ktr-screen payment-root">
         <div className="payment-error">
           <h2>No order found</h2>
           <button onClick={() => navigate('/cart')} className="back-to-cart-btn">
@@ -379,7 +381,7 @@ const PaymentPage = () => {
   // ============================================
 
   const handlePrintAll = async () => {
-    const orderType = localStorage.getItem('orderType') === "dine-in" ? 'DINE IN' : "TAKE AWAY";
+    const orderType = orderTypePrintLabel();
 
     console.log('\n' + '='.repeat(60));
     console.log('🖨️  PRINT SERVICE - Starting Print Jobs');
@@ -524,341 +526,265 @@ const PaymentPage = () => {
   // RENDER PAYMENT PAGE
   // ============================================
 
+  const startQR = () => {
+    if (qrData || loadingQR || selectedMethod) return;
+    setSelectedMethod('qr');
+    handleGenerateQR();
+  };
+  const startCard = () => {
+    if (edcData || loadingEDC || selectedMethod) return;
+    setSelectedMethod('edc');
+    handleEDCPayment('CARD');
+  };
+  const startZomato = () => {
+    if (zomatoData || loadingZomato || selectedMethod) return;
+    setSelectedMethod('zomato_district');
+    handleEDCPayment('ZOMATO_DISTRICT');
+  };
+  const startCash = () => {
+    if (cashData || loadingCash || selectedMethod) return;
+    setSelectedMethod('cash');
+    setShowCashPinInput(true);
+    setTimeRemaining(100);
+    setTimerActive(true);
+  };
+
+  // A failed QR / card init starts nothing (no data, no polling), so the guest can safely pick again.
+  const initFailed =
+    Boolean(error) &&
+    ((selectedMethod === 'qr' && !qrData && !loadingQR) ||
+      (selectedMethod === 'edc' && !edcData && !loadingEDC) ||
+      (selectedMethod === 'zomato_district' && !zomatoData && !loadingZomato));
+  const chooseAgain = () => {
+    setError(null);
+    setTimerActive(false);
+    setSelectedMethod(null);
+  };
+
+  const itemCount = orderDetails.items.reduce((n, it) => n + (it.quantity || 0), 0);
+  const taxTotal = orderDetails.tax + (orderDetails.takeawayTax || 0);
+  const clock = `${Math.floor(timeRemaining / 60)}:${(timeRemaining % 60).toString().padStart(2, '0')}`;
+  const amount = `₹${(amountInPaise / 100).toFixed(0)}`;
+  const PIN_MAX = 4;
+  const pressPin = (key) => {
+    if (key === 'del') setCashPin((p) => p.slice(0, -1));
+    else if (key === 'clear') setCashPin('');
+    else setCashPin((p) => (p.length < PIN_MAX ? p + key : p));
+  };
+
+  const focused = {
+    qr: {
+      title: 'Scan to pay with UPI',
+      sub: 'Open GPay, PhonePe, Paytm or any UPI app and scan this code.',
+      loading: loadingQR && !qrData,
+      loadingText: 'Getting your QR code ready…',
+      waitText: 'Waiting for your payment',
+    },
+    edc: {
+      title: 'Pay on the card machine',
+      sub: 'Tap, insert or swipe your card on the machine at the counter.',
+      loading: loadingEDC && !edcData,
+      loadingText: 'Starting the card machine…',
+      waitText: 'Waiting for the card machine',
+    },
+    zomato_district: {
+      title: 'Pay with Zomato District',
+      sub: 'Complete the Zomato District payment on the card machine.',
+      loading: loadingZomato && !zomatoData,
+      loadingText: 'Starting the card machine…',
+      waitText: 'Waiting for Zomato District',
+    },
+    cash: {
+      title: 'Pay with cash',
+      sub: 'Hand the cash to our staff. They enter their PIN here to confirm.',
+      loading: false,
+      waitText: '',
+    },
+  }[selectedMethod];
+
   return (
-    <div className="payment-root">
-      {/* Header */}
-      <div className="nav-header">
-        <button className="back-button" onClick={() => navigate('/cart')}>
-          <IoMdArrowRoundBack size={30} />
-        </button>
-        <h1 className="nav-title">Payment</h1>
-      </div>
-
-      <div className="payment-container">
-        {/* Order Summary */}
-        <div className="order-summary-compact">
-          <h3 className="summary-heading">Order Summary</h3>
-
-          <div className="summary-items">
-            {orderDetails.items.map((item, idx) => {
-              // pricePerUnit already includes the selected variant, add-ons and tax
-              const unitPrice = item.pricePerUnit !== undefined
-                ? item.pricePerUnit
-                : (item.price || 0) + (item.taxAmount || 0);
-              const itemTotal = unitPrice * item.quantity;
-              const variantName = item.selectedCustomizations?.variation?.name;
-              return (
-                <div key={idx} className="summary-item-row">
-                  <span className="item-name-qty">
-                    {item.itemName}{variantName ? ` (${variantName})` : ''} <span className="qty-badge">x{item.quantity}</span>
-                  </span>
-                  <span className="item-amount">₹{itemTotal.toFixed(2)}</span>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="summary-totals">
-            <div className="summary-total-row">
-              <span>Subtotal:</span>
-              <span>₹{orderDetails.subtotal.toFixed(2)}</span>
-            </div>
-            {orderDetails.takeawayChargeWithoutTax > 0 && (
-              <div className="summary-total-row">
-                <span>Takeaway Charge:</span>
-                <span>₹{orderDetails.takeawayChargeWithoutTax.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="summary-total-row">
-              <span>Tax:</span>
-              <span>₹{(orderDetails.tax + (orderDetails.takeawayTax || 0)).toFixed(2)}</span>
-            </div>
-            {orderDetails.discountAmount > 0 && (
-              <div className="summary-total-row" style={{ color: '#2e7d32', fontWeight: 'bold' }}>
-                <span>Coupon Discount ({orderDetails.discountCode}):</span>
-                <span>-₹{orderDetails.discountAmount.toFixed(2)}</span>
-              </div>
-            )}
-            <div className="summary-total-row grand-total">
-              <span>Total:</span>
-              <span>₹{totalAmount.toFixed(2)}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Payment Methods Section */}
-        <div className="payment-methods-section">
-          {/* Error Message */}
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
+    <div className="ktr ktr-screen payment-root">
+      <div className="topbar">
+        <div className="topbar-in wrap">
+          {selectedMethod ? (
+            <span className="topbar-title">Pay {amount}</span>
+          ) : (
+            <button type="button" className="restart" onClick={() => navigate('/cart')}>
+              ← Back to order
+            </button>
           )}
-
-          <h2 className="payment-heading">Select Payment Method</h2>
-
-          {/* QR Code Payment */}
-          <div className={`payment-method-card ${selectedMethod === 'qr' ? 'selected' : ''} ${selectedMethod && selectedMethod !== 'qr' ? 'disabled' : ''}`}>
-            <div className="method-header">
-              <div className="method-info">
-                <QrCode size={24} />
-                {/* <span className="method-name">UPI / QR Code</span> */}
-              </div>
-
-              <button
-                className="direct-pay-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!qrData && !loadingQR && !selectedMethod) {
-                    setSelectedMethod('qr');
-                    setExpandedMethod('qr');
-                    handleGenerateQR();
-                  }
-                }}
-                disabled={loadingQR || qrData || (selectedMethod && selectedMethod !== 'qr')}
-              >
-                {loadingQR ? (
-                  <>
-                    <Loader size={18} className="spinning" />
-                    Generating...
-                  </>
-                ) : qrData ? (
-                  <>
-                    <Check size={18} />
-                    QR Ready
-                  </>
-                ) : (
-                  'Pay with UPI/QR'
-                )}
-              </button>
-            </div>
-
-            {expandedMethod === 'qr' && qrData && (
-              <div className="method-content">
-                <div className="qr-container">
-                  <QRCodeSVG
-                    value={qrData.qr_string}
-                    size={200}
-                    level="H"
-                    includeMargin={true}
-                  />
-                </div>
-                <p className="qr-instruction">Scan this QR code with any UPI app</p>
-                <div className="transaction-details">
-                  <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
-                  <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
-                </div>
-
-                {paymentStatus === 'PROCESSING' && (
-                  <div className="waiting-indicator">
-                    <div className="spinner"></div>
-                    <p>Waiting for payment confirmation...</p>
-                  </div>
-                )}
-
-                <button className="cancel-payment-btn" onClick={handleCancelPayment}>
-                  Cancel Payment
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* EDC Card Payment */}
-          <div className={`payment-method-card ${selectedMethod === 'edc' ? 'selected' : ''} ${selectedMethod && selectedMethod !== 'edc' ? 'disabled' : ''}`}>
-            <div className="method-header">
-              <div className="method-info">
-                <CreditCard size={24} />
-                {/* <span className="method-name">Card Payment</span> */}
-              </div>
-
-              <button
-                className="direct-pay-btn card-pay"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!edcData && !loadingEDC && !selectedMethod) {
-                    setSelectedMethod('edc');
-                    setExpandedMethod('edc');
-                    handleEDCPayment("CARD");
-                  }
-                }}
-                disabled={loadingEDC || edcData || (selectedMethod && selectedMethod !== 'edc')}
-              >
-                {loadingEDC ? (
-                  <>
-                    <Loader size={18} className="spinning" />
-                    Initializing...
-                  </>
-                ) : edcData ? (
-                  <>
-                    <Check size={18} />
-                    Processing
-                  </>
-                ) : (
-                  'Pay with Card'
-                )}
-              </button>
-            </div>
-
-            {expandedMethod === 'edc' && edcData && (
-              <div className="method-content">
-                <div className="edc-info">
-                  <p className="edc-instruction">Please insert or tap your card on the EDC device</p>
-                  <div className="transaction-details">
-                    <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
-                    <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
-                  </div>
-                </div>
-
-                {paymentStatus === 'PROCESSING' && (
-                  <div className="waiting-indicator">
-                    <div className="spinner"></div>
-                    <p>Processing card payment...</p>
-                  </div>
-                )}
-
-                <button className="cancel-payment-btn" onClick={handleCancelPayment}>
-                  Cancel Payment
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Zomato District Payment */}
-          <div className={`payment-method-card ${selectedMethod === 'zomato_district' ? 'selected' : ''} ${selectedMethod && selectedMethod !== 'zomato_district' ? 'disabled' : ''}`}>
-            <div className="method-header">
-              <div className="method-info">
-                <Smartphone size={24} />
-                {/* <span className="method-name">Zomato District</span> */}
-              </div>
-
-              <button
-                className="direct-pay-btn zomato-pay"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!zomatoData && !loadingZomato && !selectedMethod) {
-                    setSelectedMethod('zomato_district');
-                    setExpandedMethod('zomato_district');
-                    handleEDCPayment("ZOMATO_DISTRICT");
-                  }
-                }}
-                disabled={loadingZomato || zomatoData || (selectedMethod && selectedMethod !== 'zomato_district')}
-              >
-                {loadingZomato ? (
-                  <>
-                    <Loader size={18} className="spinning" />
-                    Initializing...
-                  </>
-                ) : zomatoData ? (
-                  <>
-                    <Check size={18} />
-                    Processing
-                  </>
-                ) : (
-                  'Zomato District'
-                )}
-              </button>
-            </div>
-
-            {expandedMethod === 'zomato_district' && zomatoData && (
-              <div className="method-content">
-                <div className="edc-info">
-                  <p className="edc-instruction">Please complete the Zomato District payment on the EDC device</p>
-                  <div className="transaction-details">
-                    <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
-                    <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
-                  </div>
-                </div>
-
-                {paymentStatus === 'PROCESSING' && (
-                  <div className="waiting-indicator">
-                    <div className="spinner"></div>
-                    <p>Processing Zomato payment...</p>
-                  </div>
-                )}
-
-                <button className="cancel-payment-btn" onClick={handleCancelPayment}>
-                  Cancel Payment
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Cash Payment */}
-          <div className={`payment-method-card ${selectedMethod === 'cash' ? 'selected' : ''} ${selectedMethod && selectedMethod !== 'cash' ? 'disabled' : ''}`}>
-            <div className="method-header">
-              <div className="method-info">
-                <Wallet size={24} />
-                {/* <span className="method-name">Cash Payment</span> */}
-              </div>
-
-              <button
-                className="direct-pay-btn cash-pay"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!cashData && !loadingCash && !selectedMethod) {
-                    setSelectedMethod('cash');
-                    setExpandedMethod('cash');
-                    setShowCashPinInput(true);
-                    setTimeRemaining(100);
-                    setTimerActive(true);
-                  }
-                }}
-                disabled={loadingCash || cashData || (selectedMethod && selectedMethod !== 'cash')}
-              >
-                {loadingCash ? (
-                  <>
-                    <Loader size={18} className="spinning" />
-                    Processing...
-                  </>
-                ) : cashData ? (
-                  <>
-                    <Check size={18} />
-                    Completed
-                  </>
-                ) : (
-                  'Pay with Cash'
-                )}
-              </button>
-            </div>
-
-            {expandedMethod === 'cash' && showCashPinInput && (
-              <div className="method-content">
-                <div className="cash-info">
-                  <p className="cash-instruction">Please enter your PIN to complete the cash payment</p>
-                  <div className="pin-input-container">
-                    <input
-                      type="password"
-                      className="pin-input"
-                      placeholder="PIN"
-                      value={cashPin}
-                      onChange={(e) => setCashPin(e.target.value)}
-                      onKeyPress={handleCashPinSubmit}
-                      maxLength={4}
-                      autoFocus
-                    />
-                    <button
-                      className="submit-pin-btn"
-                      onClick={handleCashPayment}
-                      disabled={!cashPin || loadingCash}
-                    >
-                      {loadingCash ? 'Processing...' : 'Submit'}
-                    </button>
-                  </div>
-                  <div className="transaction-details">
-                    <p><strong>Amount:</strong> ₹{(amountInPaise / 100).toFixed(2)}</p>
-                    <p><strong>Time Remaining:</strong> {Math.floor(timeRemaining / 60)}:{(timeRemaining % 60).toString().padStart(2, '0')}</p>
-                  </div>
-                </div>
-
-                <button className="cancel-payment-btn" onClick={handleCancelPayment}>
-                  Cancel Payment
-                </button>
-              </div>
-            )}
-          </div>
-
+          <span className="spacer" />
+          {timerActive ? (
+            <span className="pay-timer" aria-label="Time remaining">⏱ {clock}</span>
+          ) : (
+            <span className="chip-type">{orderTypeLabel()}</span>
+          )}
         </div>
       </div>
+      <div className="topbar-plaid" />
+
+      <main className="pay wrap">
+        {error && <div className="err-box" role="alert">{error}</div>}
+
+        {!selectedMethod ? (
+          <>
+            <section className="bill">
+              <div className="bill-main">
+                <div className="bill-copy">
+                  <span className="k">Your KTR bill</span>
+                  <span className="v">{amount}</span>
+                  <span className="s">
+                    {itemCount} {itemCount === 1 ? 'item' : 'items'} · incl. ₹{taxTotal.toFixed(0)} taxes
+                    {orderDetails.takeawayChargeWithoutTax > 0 ? ` and ₹${orderDetails.takeawayChargeWithoutTax.toFixed(0)} packing` : ''}
+                  </span>
+                  {orderDetails.discountAmount > 0 && (
+                    <span className="save">You saved ₹{Number(orderDetails.discountAmount).toFixed(0)} with {orderDetails.discountCode}</span>
+                  )}
+                </div>
+                <div className="bill-dishes" aria-hidden="true">
+                  {orderDetails.items.slice(0, 3).map((it, i) => {
+                    const img = it.imageURL || imageUrl(matchMenuItem(meta, it.itemName)?.image);
+                    return (
+                      <span key={i} className={`dish ${img ? '' : 'pl'}`} style={img ? { backgroundImage: `url(${img})` } : undefined}>
+                        {it.quantity > 1 && <b>×{it.quantity}</b>}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="bill-chips">
+                {orderDetails.items.map((it, i) => (
+                  <span key={i}>{it.quantity} × {it.itemName}</span>
+                ))}
+              </div>
+            </section>
+
+            <h2 className="pay-h">How would you like to pay?</h2>
+            <div className="pay-grid">
+              <button type="button" className="pay-tile wide m-upi" onClick={startQR}>
+                <span className="ic"><QrCode size={30} /></span>
+                <span className="tx">
+                  <b>UPI</b>
+                  <span>GPay · PhonePe · Paytm · any UPI app</span>
+                </span>
+                <span className="badge-fast">Fastest</span>
+                <QrCode className="wm" size={150} aria-hidden="true" />
+              </button>
+              <button type="button" className="pay-tile m-card" onClick={startCard}>
+                <span className="ic"><CreditCard size={28} /></span>
+                <span className="tx"><b>Card</b><span>Tap, insert or swipe</span></span>
+                <CreditCard className="wm" size={120} aria-hidden="true" />
+              </button>
+              <button type="button" className="pay-tile m-cash" onClick={startCash}>
+                <span className="ic"><Wallet size={28} /></span>
+                <span className="tx"><b>Cash</b><span>Pay our staff</span></span>
+                <Wallet className="wm" size={120} aria-hidden="true" />
+              </button>
+              <button type="button" className="pay-tile wide m-zomato" onClick={startZomato}>
+                <span className="ic"><Smartphone size={28} /></span>
+                <span className="tx"><b>Zomato District</b><span>Pay on the card machine</span></span>
+                <Smartphone className="wm" size={130} aria-hidden="true" />
+              </button>
+            </div>
+
+            <details className="pay-items">
+              <summary>
+                <span>{orderDetails.items.map((it) => `${it.quantity} × ${it.itemName}`).join(' · ')}</span>
+                <span className="view">View</span>
+              </summary>
+              <div className="rows">
+                {orderDetails.items.map((item, idx) => {
+                  const unit = item.pricePerUnit !== undefined ? item.pricePerUnit : (item.price || 0) + (item.taxAmount || 0);
+                  const variant = item.selectedCustomizations?.variation?.name;
+                  return (
+                    <div key={idx} className="r">
+                      <span>{item.quantity} × {item.itemName}{variant ? ` (${variant})` : ''}</span>
+                      <span>₹{(unit * item.quantity).toFixed(2)}</span>
+                    </div>
+                  );
+                })}
+                <div className="r"><span>Items</span><span>₹{orderDetails.subtotal.toFixed(2)}</span></div>
+                {orderDetails.takeawayChargeWithoutTax > 0 && (
+                  <div className="r"><span>Take-away packing</span><span>₹{orderDetails.takeawayChargeWithoutTax.toFixed(2)}</span></div>
+                )}
+                <div className="r"><span>Taxes</span><span>₹{taxTotal.toFixed(2)}</span></div>
+                {orderDetails.discountAmount > 0 && (
+                  <div className="r save"><span>Coupon {orderDetails.discountCode}</span><span>−₹{Number(orderDetails.discountAmount).toFixed(2)}</span></div>
+                )}
+                <div className="r total"><span>Total</span><span>₹{totalAmount.toFixed(2)}</span></div>
+              </div>
+            </details>
+          </>
+        ) : (
+          <section className="pay-focus">
+            <h2>{focused.title}</h2>
+            <p className="sub">{focused.sub}</p>
+
+            {focused.loading && (
+              <div className="pay-wait"><span className="spinner" />{focused.loadingText}</div>
+            )}
+
+            {selectedMethod === 'qr' && qrData && (
+              <div className="qr-box">
+                <QRCodeSVG value={qrData.qr_string} size={260} level="H" includeMargin />
+              </div>
+            )}
+
+            {(selectedMethod === 'edc' && edcData) || (selectedMethod === 'zomato_district' && zomatoData) ? (
+              <div className="machine" aria-hidden="true">
+                <CreditCard size={64} />
+              </div>
+            ) : null}
+
+            {selectedMethod === 'cash' && showCashPinInput && (
+              <div className="cash">
+                <div className="pin-dots" aria-label={`${cashPin.length} of ${PIN_MAX} digits entered`}>
+                  {Array.from({ length: PIN_MAX }, (_, i) => <i key={i} className={i < cashPin.length ? 'on' : ''} />)}
+                </div>
+                <input
+                  type="password"
+                  className="pin-hidden"
+                  value={cashPin}
+                  onChange={(e) => setCashPin(e.target.value.replace(/\D/g, '').slice(0, PIN_MAX))}
+                  onKeyPress={handleCashPinSubmit}
+                  maxLength={PIN_MAX}
+                  aria-label="Staff PIN"
+                  autoFocus
+                />
+                <div className="pinpad">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'del'].map((k) => (
+                    <button key={k} type="button" className={`pk ${k.length > 1 ? 'fn' : ''}`} onClick={() => pressPin(k)} disabled={loadingCash}>
+                      {k === 'del' ? '⌫' : k === 'clear' ? 'Clear' : k}
+                    </button>
+                  ))}
+                </div>
+                <button type="button" className="btn primary big" onClick={handleCashPayment} disabled={!cashPin || loadingCash}>
+                  <span>{loadingCash ? 'Confirming…' : 'Confirm cash received'}</span>
+                  <span className="price">{amount}</span>
+                </button>
+              </div>
+            )}
+
+            {!initFailed && selectedMethod !== 'cash' && <div className="pay-big">{amount}</div>}
+
+            {initFailed && (
+              <button type="button" className="btn primary big" onClick={chooseAgain}>
+                <span>Choose another way to pay</span>
+                <span className="price">{amount}</span>
+              </button>
+            )}
+
+            {selectedMethod !== 'cash' && !focused.loading && paymentStatus === 'PROCESSING' && (
+              <div className="pay-wait"><span className="spinner" />{focused.waitText}</div>
+            )}
+
+            <button type="button" className="btn ghost" onClick={handleCancelPayment}>
+              Cancel payment
+            </button>
+            <p className="fine">Your token prints as soon as the payment goes through.</p>
+          </section>
+        )}
+      </main>
     </div>
   );
 };

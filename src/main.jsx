@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import { CartProvider } from './components/CartContext';
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
-import MenuSection from "./components/MenuSection"
 import MenuPage from './components/MenuPage';
 import LandingPage from './components/Landingpage';
 import CartPage from './components/CartPage';
@@ -75,7 +74,7 @@ const router = createBrowserRouter([
     children: [
       { path: "/", element: <LandingPage /> },
       { path: "/category", element: <MenuPage /> },
-      { path: `/item/:id`, element: <MenuSection /> },
+      { path: `/item/:id`, element: <MenuPage /> }, // old deep links land on the menu
       { path: "/cart", element: <CartPage /> },
       { path: "/payment", element: <PaymentPage /> },
       { path: "/config", element: <ConfigPage /> }, // Admin config route
