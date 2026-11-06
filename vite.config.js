@@ -7,6 +7,10 @@ const NGROK_URL = 'https://4351c8539fe4.ngrok-free.app';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    // Kiosk tablets can run an Android WebView as old as Chrome 80: rewrite newer CSS (e.g. `inset`) for it
+    cssTarget: 'chrome80',
+  },
   server: {
     port: 5173,               // default Vite port
     strictPort: true,         // fail if port is busy
