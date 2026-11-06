@@ -8,8 +8,8 @@ import {
   storeScopedHeaders,
   getStoreIdForHeader,
 } from '../utils/kioskApi';
-import { imageUrl, matchMenuItem, useMenuMeta } from '../lib/menuMeta';
 import { lineType, orderTypeLabel, orderTypePayload, readOrderType } from '../lib/orderType';
+import { dishImage } from '../lib/dishImages';
 
 const BASE_URL = getKioskBaseUrl();
 
@@ -52,7 +52,6 @@ function CartPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const { cart, removeItem, updateQuantity, setLineType, clearCart } = useCart();
-  const meta = useMenuMeta();
   const orderType = state?.orderType || readOrderType();
   const storeId = getStoreIdForHeader();
 
@@ -265,8 +264,7 @@ function CartPage() {
               </h2>
               <div className="lines">
                 {cart.items.map((item, idx) => {
-                  const mm = matchMenuItem(meta, item.itemName);
-                  const img = item.imageURL || imageUrl(mm?.image);
+                  const img = dishImage(item);
                   const { base, tax } = unitPrices(item);
                   const c = item.selectedCustomizations || {};
                   const parcel = lineType(item, orderType) === 'takeaway';
