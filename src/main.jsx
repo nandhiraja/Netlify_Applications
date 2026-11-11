@@ -8,6 +8,7 @@ import LandingPage from './components/Landingpage';
 import CartPage from './components/CartPage';
 import PaymentPage from './components/PaymentPage'; // Create this
 import ConfigPage from './components/ConfigPage'; // Admin config page
+import ReprintPage from './components/ReprintPage'; // Staff: reprint a bill
 import PrintBillPage from './components/PrintBillPage';
 import PrintFoodKOTPage from './components/PrintFoodKOTPage';
 import PrintCoffeeKOTPage from './components/PrintCoffeeKOTPage';
@@ -16,6 +17,8 @@ import PrintCoffeeKOTPage from './components/PrintCoffeeKOTPage';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { getStoreIdForHeader } from './utils/kioskApi';
+import IdlePrompt from './components/IdlePrompt';
+import { IDLE_MS, PAYMENT_IDLE_MS } from './lib/idle';
 
 /** Routes that do not require `kiosk_config` with a store id (see API.md X-Store-Id). */
 function routeAllowsMissingStore(pathname) {
@@ -35,34 +38,23 @@ const Layout = () => {
     }
   }, [location.pathname, navigate]);
 
-  useEffect(() => {
-    let timeoutId;
-
-    const resetTimer = () => {
-      clearTimeout(timeoutId);
-      if (location.pathname !== '/') {
-        timeoutId = setTimeout(() => {
-          navigate('/');
-        }, 40000); // 40 seconds
-      }
-    };
-
-    resetTimer();
-
-    const events = ['mousemove', 'mousedown', 'keypress', 'touchstart', 'scroll'];
-    events.forEach(event => window.addEventListener(event, resetTimer));
-
-    return () => {
-      clearTimeout(timeoutId);
-      events.forEach(event => window.removeEventListener(event, resetTimer));
-    };
-  }, [location.pathname, navigate]);
+  // "Still ordering?" replaces the old silent reset: after 20 s without a touch the guest gets a
+  // 15 s countdown before the order is cleared. The welcome screen runs its own (see LandingPage).
+  const path = location.pathname;
+  const idleOff = path === '/' || path === '/config' || path.startsWith('/print/');
 
   return (
     <CartProvider>
       <div className="page-border-wrapper">
         <Outlet />
       </div>
+      {!idleOff && (
+        <IdlePrompt
+          key={path}
+          idleMs={path === '/payment' ? PAYMENT_IDLE_MS : IDLE_MS}
+          onExpire={() => navigate('/')}
+        />
+      )}
     </CartProvider>
   );
 };
@@ -78,6 +70,7 @@ const router = createBrowserRouter([
       { path: "/cart", element: <CartPage /> },
       { path: "/payment", element: <PaymentPage /> },
       { path: "/config", element: <ConfigPage /> }, // Admin config route
+      { path: "/reprint", element: <ReprintPage /> },
       { path: "/print/bill/:orderId", element: <PrintBillPage /> },
       { path: "/print/food-kot/:orderId", element: <PrintFoodKOTPage /> },
       { path: "/print/coffee-kot/:orderId", element: <PrintCoffeeKOTPage /> },

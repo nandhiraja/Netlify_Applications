@@ -5,9 +5,9 @@
  */
 
 export const ORDER_TYPES = {
-  'dine-in': { label: 'Dine in', print: 'DINE IN', payload: 'DINEIN' },
-  takeaway: { label: 'Take away', print: 'TAKE AWAY', payload: 'TAKEAWAY' },
-  mixed: { label: 'Dine in + Take away', print: 'DINE IN + TAKE AWAY', payload: 'DINEIN' },
+  'dine-in': { label: 'Eat here', print: 'DINE IN', payload: 'DINEIN' },
+  takeaway: { label: 'Parcel', print: 'TAKE AWAY', payload: 'TAKEAWAY' },
+  mixed: { label: 'Here + parcel', print: 'DINE IN + TAKE AWAY', payload: 'DINEIN' },
 };
 
 export function readOrderType() {
@@ -16,7 +16,7 @@ export function readOrderType() {
 }
 
 export function orderTypeLabel(type = readOrderType()) {
-  return ORDER_TYPES[type]?.label ?? 'Dine in';
+  return ORDER_TYPES[type]?.label ?? 'Eat here';
 }
 
 /** Label printed on bills and KOTs. */

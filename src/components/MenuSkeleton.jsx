@@ -13,26 +13,33 @@ const MenuSkeleton = () => (
       </div>
     </div>
     <div className="topbar-plaid" />
-    <nav className="cats wrap">
-      {[120, 140, 100, 110, 90].map((w, i) => (
-        <span key={i} className="sk sk-pill" style={{ width: w }} />
-      ))}
-    </nav>
-    <main className="content wrap">
-      <span className="sk sk-title" />
-      <div className="grid">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="item sk-card">
-            <span className="ph sk" />
-            <span className="tx">
-              <span className="sk sk-line" />
-              <span className="sk sk-line short" />
-              <span className="sk sk-line price" />
-            </span>
-          </div>
+    <div className="menu-body wrap">
+      <nav className="cats">
+        {[120, 140, 100, 110, 90].map((w, i) => (
+          <span key={i} className="sk sk-pill" style={{ minWidth: w }} />
         ))}
-      </div>
-    </main>
+      </nav>
+      <main className="content">
+        <span className="sk sk-title" />
+        <div className="grid">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="item sk-card">
+              <span className="ph sk" />
+              <span className="tx">
+                <span className="sk sk-line" />
+                <span className="sk sk-line short" />
+                <span className="sk sk-line price" />
+              </span>
+            </div>
+          ))}
+        </div>
+      </main>
+      <aside className="order order-side">
+        <span className="sk sk-title" style={{ width: '70%' }} />
+        <span className="sk sk-line" />
+        <span className="sk sk-line short" />
+      </aside>
+    </div>
   </div>
 );
 

@@ -83,6 +83,17 @@ export const CartProvider = ({ children }) => {
     });
   };
 
+  /** Leaving a mixed order: every line follows the order type again. */
+  const resetLineTypes = () => {
+    setCart(prevCart => ({
+      items: prevCart.items.map(it => ({
+        ...it,
+        lineType: undefined,
+        selectedCustomizations: { ...(it.selectedCustomizations || {}), parcel: false },
+      })),
+    }));
+  };
+
   const clearCart = () => {
     setCart({ items: [] });
   };
@@ -105,6 +116,7 @@ export const CartProvider = ({ children }) => {
         removeItem, 
         updateQuantity, 
         setLineType,
+        resetLineTypes,
         clearCart,
         getCartTotal 
       }}
