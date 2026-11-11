@@ -210,10 +210,15 @@ const ConfigPage = () => {
                         <Settings size={24} />
                         <h1>Kiosk config</h1>
                     </div>
-                    <button onClick={() => navigate('/')} className="close-config-btn">
-                        <X size={16} />
-                        Close
-                    </button>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => navigate('/reprint')} className="close-config-btn">
+                            Reprint a bill
+                        </button>
+                        <button onClick={() => navigate('/')} className="close-config-btn">
+                            <X size={16} />
+                            Close
+                        </button>
+                    </div>
                 </div>
 
                 {loading && <div className="loading">Loading...</div>}

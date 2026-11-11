@@ -10,6 +10,10 @@ import {
 } from '../utils/kioskApi';
 import { lineType, orderTypeLabel, orderTypePayload, readOrderType } from '../lib/orderType';
 import { dishImage } from '../lib/dishImages';
+import { displayPrice, rupee, useCatalog } from '../lib/catalog';
+import { matchMenuItem, useMenuMeta } from '../lib/menuMeta';
+import { buildCartLine, needsChoice } from '../lib/cartLine';
+import { coffeeForNow } from '../lib/suggest';
 
 const BASE_URL = getKioskBaseUrl();
 
@@ -51,8 +55,37 @@ function unitPrices(item) {
 function CartPage() {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const { cart, removeItem, updateQuantity, setLineType, clearCart } = useCart();
-  const orderType = state?.orderType || readOrderType();
+  const { cart, addItem, removeItem, updateQuantity, setLineType, resetLineTypes } = useCart();
+  const [orderType, setOrderType] = useState(state?.orderType || readOrderType());
+  const { data: catalog } = useCatalog();
+  const meta = useMenuMeta();
+
+  const changeOrderType = (type) => {
+    if (type === orderType) return;
+    localStorage.setItem('orderType', type);
+    if (type !== 'mixed') resetLineTypes();
+    setOrderType(type);
+  };
+
+  // "Add before you go?": coffee, a vada and something sweet, unless they're already in the order.
+  const lastChance = (() => {
+    if (!catalog || !meta) return [];
+    const byMenuId = new Map();
+    const metaOf = new Map();
+    for (const it of catalog.items || []) {
+      const mm = matchMenuItem(meta, it.itemName);
+      metaOf.set(it.itemId, mm);
+      if (mm && !/\bcharges?\b/i.test(it.itemName || '') && !byMenuId.has(mm.id)) byMenuId.set(mm.id, it);
+    }
+    const inOrder = cart.items.map((it) => metaOf.get(it.itemId)).filter(Boolean);
+    const hasCoffee = inOrder.some((m) => m.category === 'coffee');
+    const has = (id) => inOrder.some((m) => m.id === id);
+    return [hasCoffee ? null : coffeeForNow(), 'vd-medu', 'ds-kesari']
+      .filter((id) => id && !has(id))
+      .map((id) => byMenuId.get(id))
+      .filter((it) => it && !needsChoice(it, catalog.addongroups || []))
+      .map((it) => ({ item: it, short: metaOf.get(it.itemId)?.short || '' }));
+  })();
   const storeId = getStoreIdForHeader();
 
   const [loading, setLoading] = useState(false);
@@ -222,7 +255,8 @@ function CartPage() {
           },
         },
       });
-      clearCart();
+      // The cart is kept until the payment succeeds, so going back to change the payment method
+      // (or after a failed / timed-out payment) returns to the same order.
     } catch (err) {
       console.error('Error creating order:', err);
       setError(err.message || 'Failed to process your order. Please try again.');
@@ -242,7 +276,7 @@ function CartPage() {
           </button>
           <span className="topbar-title">Your order</span>
           <span className="spacer" />
-          <span className="chip-type">{orderTypeLabel(orderType)}</span>
+          <span className="chip-type as-label">{orderTypeLabel(orderType)}</span>
         </div>
       </div>
       <div className="topbar-plaid" />
@@ -260,7 +294,7 @@ function CartPage() {
             <section className="panel">
               <h2>
                 {count} {count === 1 ? 'item' : 'items'}
-                {orderType === 'mixed' && <small> · tap to switch eat here / take away</small>}
+                {orderType === 'mixed' && <small> · choose eat here or parcel for each dish</small>}
               </h2>
               <div className="lines">
                 {cart.items.map((item, idx) => {
@@ -301,9 +335,9 @@ function CartPage() {
                           </button>
                         </div>
                         {orderType === 'mixed' && (
-                          <div className="split" role="group" aria-label="Eat here or take away">
+                          <div className="split" role="group" aria-label="Eat here or parcel">
                             <button type="button" aria-pressed={!parcel} onClick={() => setLineType(idx, 'dine-in')}>Eat here</button>
-                            <button type="button" aria-pressed={parcel} onClick={() => setLineType(idx, 'takeaway')}>Take away</button>
+                            <button type="button" aria-pressed={parcel} onClick={() => setLineType(idx, 'takeaway')}>Parcel</button>
                           </div>
                         )}
                       </div>
@@ -313,11 +347,40 @@ function CartPage() {
               </div>
             </section>
 
+            <section className="panel">
+              <h2>Order type</h2>
+              <div className="pay" role="group" aria-label="Order type">
+                <button type="button" aria-pressed={orderType === 'dine-in'} onClick={() => changeOrderType('dine-in')}>Eat here</button>
+                <button type="button" aria-pressed={orderType === 'takeaway'} onClick={() => changeOrderType('takeaway')}>Parcel</button>
+                <button type="button" aria-pressed={orderType === 'mixed'} onClick={() => changeOrderType('mixed')}>Some of each</button>
+              </div>
+              {lastChance.length > 0 && (
+                <>
+                  <h2 className="sub">Add before you go?</h2>
+                  <div className="extras">
+                    {lastChance.map(({ item, short }) => {
+                      const img = dishImage(item);
+                      return (
+                        <button key={item.itemId} type="button" className="extra" disabled={loading} onClick={() => addItem(buildCartLine(item, { orderType }))}>
+                          <span className={`th ${img ? '' : 'pl'}`} style={img ? { backgroundImage: `url(${img})` } : undefined} />
+                          <span>
+                            <b>{item.itemName}</b>
+                            <small>{short}</small>
+                          </span>
+                          <span className="price">+{rupee(displayPrice(item))}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </section>
+
             <section className="panel summary">
               <div className="sum-row"><span>Items</span><span>₹{breakdown.subtotal.toFixed(2)}</span></div>
               {takeawayChargesWithoutTax > 0 && (
                 <div className="sum-row">
-                  <span>Take-away packing{orderType === 'mixed' ? ` (${parcelQty} items)` : ''}</span>
+                  <span>Parcel packing{orderType === 'mixed' ? ` (${parcelQty} items)` : ''}</span>
                   <span>₹{takeawayChargesWithoutTax.toFixed(2)}</span>
                 </div>
               )}

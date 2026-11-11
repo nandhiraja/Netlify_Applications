@@ -516,6 +516,7 @@ const PaymentPage = () => {
         transactionDetails={transactionDetails}
         onPrintAll={handlePrintAll}
         onSendWhatsapp={handleWhatsAppKOT}
+        paymentMethod={selectedMethod}
       />
     );
   }
@@ -704,7 +705,7 @@ const PaymentPage = () => {
                 })}
                 <div className="r"><span>Items</span><span>₹{orderDetails.subtotal.toFixed(2)}</span></div>
                 {orderDetails.takeawayChargeWithoutTax > 0 && (
-                  <div className="r"><span>Take-away packing</span><span>₹{orderDetails.takeawayChargeWithoutTax.toFixed(2)}</span></div>
+                  <div className="r"><span>Parcel packing</span><span>₹{orderDetails.takeawayChargeWithoutTax.toFixed(2)}</span></div>
                 )}
                 <div className="r"><span>Taxes</span><span>₹{taxTotal.toFixed(2)}</span></div>
                 {orderDetails.discountAmount > 0 && (
@@ -778,7 +779,7 @@ const PaymentPage = () => {
             )}
 
             <button type="button" className="btn ghost" onClick={handleCancelPayment}>
-              Cancel payment
+              Pay another way
             </button>
             <p className="fine">Your token prints as soon as the payment goes through.</p>
           </section>

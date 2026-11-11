@@ -8,6 +8,10 @@ import { silentPrintBill, silentPrintFoodKOT, silentPrintCoffeeKOT, silentPrintA
 import { triggerBackend9101Prints } from './utils/backendPrintService';
 import { isAndroidBridge, androidPrintAll } from './utils/androidPrint';
 import { orderTypeLabel, orderTypePrintLabel } from '../lib/orderType';
+import { saveCompletedOrder } from '../lib/orderHistory';
+import { printBillOnly, storePrintInfo } from './utils/printOrder';
+
+const DONE_HOLD_S = 20;
 
 const TokenSuccess = ({
   token,
@@ -17,7 +21,8 @@ const TokenSuccess = ({
   orderDetails,
   transactionDetails,
   onPrintAll,
-  onSendWhatsapp
+  onSendWhatsapp,
+  paymentMethod
 }) => {
 
   const navigate = useNavigate();
@@ -28,18 +33,44 @@ const TokenSuccess = ({
   const [isPrintSuccess, setIsPrintSuccess] = useState(false); // Track successful print
   const [printStatus, setPrintStatus] = useState('idle'); // 'idle', 'printing', 'success', 'error'
   const [printNotification, setPrintNotification] = useState(''); // User-facing notification message
+  const [secondsLeft, setSecondsLeft] = useState(DONE_HOLD_S);
+  const [reprintNote, setReprintNote] = useState('');
 
-  // Auto-navigation timer - Only redirect if no errors
+  // Keep the paid order on this kiosk so staff can reprint its bill later.
   useEffect(() => {
-    // Only set timer if print was successful (no errors)
-    if (!printError && isPrintSuccess) {
-      const timer = setTimeout(() => {
-        navigate('/');
-      }, 10000); // 10 s: long enough to read the token and wait time
+    saveCompletedOrder({
+      orderId,
+      kot_code,
+      KDSInvoiceId,
+      orderDetails,
+      transactionDetails,
+      paymentMethod,
+      orderTypePrint: orderTypePrintLabel(),
+      orderTypeLabel: orderTypeLabel(),
+    });
+  }, [orderId]);
 
-      return () => clearTimeout(timer);
+  // Once everything is done the token stays up for 20 s, then the welcome screen returns.
+  // Not while a print error is showing: staff close that themselves.
+  const counting = !printError && isPrintSuccess;
+  useEffect(() => {
+    if (!counting) return undefined;
+    if (secondsLeft <= 0) {
+      navigate('/');
+      return undefined;
     }
-  }, [navigate, printError, isPrintSuccess]);
+    const timer = setTimeout(() => setSecondsLeft((n) => n - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [counting, secondsLeft, navigate]);
+
+  const handleReprint = async () => {
+    setSecondsLeft(DONE_HOLD_S);
+    setReprintNote('Printing your bill again…');
+    const res = await printBillOnly({
+      orderId, kot_code, KDSInvoiceId, orderDetails, transactionDetails, orderTypePrint: orderTypePrintLabel(),
+    });
+    setReprintNote(res.ok ? 'Bill printed again, please collect it.' : res.error || 'Could not print the bill.');
+  };
 
   // 🔥 AUTOMATED PARALLEL PRINTING WITH FALLBACK - Triggered automatically on page load
   useEffect(() => {
@@ -47,51 +78,7 @@ const TokenSuccess = ({
     const autoPrintAll = async () => {
       // Set printing status and show notification
       const orderType = orderTypePrintLabel();
-      const ECD_CONFIG_DATA = JSON.parse(localStorage.getItem('kiosk_config'));
-      const storeName = ECD_CONFIG_DATA.store_name;
-
-      const VERSOVA_ADDRESS_LINE_1 = "Shop no. 202, Aram nagar, JP Rd, Aram Nagar Part 2, Machlimar,";
-      const VERSOVA_ADDRESS_LINE_2 = "Versova, Andheri West, Mumbai, Maharashtra 400061";
-
-      const BANDRA_ADDRESS_LINE_1 = "Shop No.36/A, Off Carter Rd, Rizvi Complex, Union Park,";
-      const BANDRA_ADDRESS_LINE_2 = " Bandra West, Mumbai, Maharashtra 400050";
-
-      const BANDRA_GST_NUMBER = "27AA0FH7156G1Z0";
-      const VERSOVA_GST_NUMBER = "27AA0FH7156G1Z0";
-
-      const BANDRA_FSSAI_NUMBER = "21524006001802";
-      const VERSOVA_FSSAI_NUMBER = "21524006001802";
-
-      const BANDRA_CIN_NUMBER = "6731";
-      const VERSOVA_CIN_NUMBER = "6731";
-
-      
-
-      let GST_NUMBER = "";
-      let ADDRESS_LINE_1 = "";
-      let ADDRESS_LINE_2 = "";
-      let FSSAI_NUMBER = "";
-      let CIN_NUMBER = "";
-
-      if (storeName.includes("Versova") || storeName.includes("versova") || storeName.includes("VERSOVA")) {
-        GST_NUMBER = VERSOVA_GST_NUMBER;
-        ADDRESS_LINE_1 = VERSOVA_ADDRESS_LINE_1;
-        ADDRESS_LINE_2 = VERSOVA_ADDRESS_LINE_2;
-        FSSAI_NUMBER = VERSOVA_FSSAI_NUMBER;
-        CIN_NUMBER = VERSOVA_CIN_NUMBER;
-      } else if (storeName.includes("Bandra") || storeName.includes("bandra") || storeName.includes("BANDRA")) {
-        GST_NUMBER = BANDRA_GST_NUMBER;
-        ADDRESS_LINE_1 = BANDRA_ADDRESS_LINE_1;
-        ADDRESS_LINE_2 = BANDRA_ADDRESS_LINE_2;
-        FSSAI_NUMBER = BANDRA_FSSAI_NUMBER;
-        CIN_NUMBER = BANDRA_CIN_NUMBER;
-      }else{
-        GST_NUMBER = "";
-        ADDRESS_LINE_1 = "";
-        ADDRESS_LINE_2 = "";
-        FSSAI_NUMBER = "";
-        CIN_NUMBER = "";
-      }
+      const { storeName, ADDRESS_LINE_1, ADDRESS_LINE_2, GST_NUMBER, FSSAI_NUMBER, CIN_NUMBER } = storePrintInfo();
 
       console.log("storeName : ", storeName);
       console.log("orderType : ", orderType);
@@ -235,7 +222,7 @@ const TokenSuccess = ({
             {(orderDetails?.items || []).map((it, i) => (
               <span key={i}>
                 {it.quantity} × {it.itemName}
-                {it.selectedCustomizations?.parcel ? <span className="tg p">Take away</span> : null}
+                {it.selectedCustomizations?.parcel ? <span className="tg p">Parcel</span> : null}
                 <br />
               </span>
             ))}
@@ -245,12 +232,16 @@ const TokenSuccess = ({
 
         <section className="promise">
           <div className="pr-time">
-            <b>{waitMins}</b>
-            <span>min</span>
+            <b>~{waitMins}</b>
+            <span>minutes</span>
           </div>
           <div className="pr-tx">
-            <span className="pr-k">Made fresh, just for you</span>
-            <h2>Ready in about {waitMins} minutes</h2>
+            <span className="pr-k">Thank you!</span>
+            <h2>Good food takes a little time.</h2>
+            <p>
+              Nothing here waits under a heat lamp. Our team is pouring your batter, roasting it in benne and grinding the
+              chutney fresh, just for you. Please allow about <b>{waitMins} minutes</b> for your order.
+            </p>
             <p className="pr-tip">
               Collect your printed token below the screen, grab a seat and keep an eye on the token board.
               We&apos;ll call out <b>token {tokenNo}</b> the moment it&apos;s ready.
@@ -267,11 +258,20 @@ const TokenSuccess = ({
         </div>
       )}
 
+      {reprintNote && <div className="print-note">{reprintNote}</div>}
+
       <div className="done-foot">
-        <span className="cd">Namaskara, and enjoy your tiffin!</span>
-        <button type="button" className="btn primary" onClick={() => navigate('/')}>
-          Start a new order
-        </button>
+        <span className="cd">
+          Namaskara, and enjoy your tiffin!{counting ? ` New order screen in ${secondsLeft}s.` : ''}
+        </span>
+        <div className="row">
+          {isPrintSuccess && (
+            <button type="button" className="btn soft" onClick={handleReprint}>Print bill again</button>
+          )}
+          <button type="button" className="btn primary" onClick={() => navigate('/')}>
+            Start a new order
+          </button>
+        </div>
       </div>
 
         {/* ⚠️ ERROR MODAL - Shows when print fails */}
