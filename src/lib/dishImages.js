@@ -20,8 +20,8 @@ const DISHES = {
   'benne-garlic-roast-dose': [PHOTO, ['Benne Garlic Roast Dose', 'Benne Garlic Roast Masala Dose']],
   'ghee-pudi-masala-dose': [ART, ['Ghee Pudi Masala Dose']],
   'ghee-masala-dose': [ART, ['Ghee Masala Dose']],
-  'benne-pudi-masala-dose': [ART, ['Benne Pudi Masala Dose']],
-  'benne-pudi-masala': [ART, ['Benne Pudi Masala']], // a separate dish on the Versova menu
+  'benne-pudi-masala-dose': [PHOTO, ['Benne Pudi Masala Dose']],
+  'benne-pudi-masala': [PHOTO, ['Benne Pudi Masala']], // a separate dish on the Versova menu
   'benne-pudi-plain-dose': [ART, ['Benne Pudi Plain Dose']],
   'ghee-plain-dose': [ART, ['Ghee Plain Dose']],
   'ghee-garlic-roast-dose': [ART, ['Ghee Garlic Roast Dose']],
@@ -29,20 +29,20 @@ const DISHES = {
   // Davanagere dose
   'davanagere-benne-open-dose': [PHOTO, ['Davanagere Benne Open Dose', 'Benne Open Dose']],
   'davanagere-khali-dose': [PHOTO, ['Davanagere Khali Dose', 'Khali Dose']],
-  'davanagere-benne-masala-dose': [ART, ['Davanagere Benne Masala Dose']],
-  'davanagere-benne-sada-dose': [ART, ['Davanagere Benne Sada Dose', 'Benne Sada Dose']],
+  'davanagere-benne-masala-dose': [PHOTO, ['Davanagere Benne Masala Dose']],
+  'davanagere-benne-sada-dose': [PHOTO, ['Davanagere Benne Sada Dose', 'Benne Sada Dose']],
   // Idli
   'ghee-pudi-thatte-idli': [PHOTO, ['Ghee Pudi Thatte Idli']],
   'idli-wada': [PHOTO, ['Idli Wada', 'Idli Vada']],
   'idli-chutney': [PHOTO, ['Idli Chutney']],
-  'ghee-pudi-idli': [ART, ['Ghee Pudi Idli']],
-  'benne-idli': [ART, ['Benne Idli']],
+  'ghee-pudi-idli': [PHOTO, ['Ghee Pudi Idli']],
+  'benne-idli': [PHOTO, ['Benne Idli']],
   'benne-thatte-idli': [ART, ['Benne Thatte Idli']],
   'thatte-idli': [ART, ['Thatte Idli']],
   // Wada / snacks
   'medu-wada': [PHOTO, ['Medu Wada', 'Medu Vada']],
   'dal-vada': [PHOTO, ['Dal Vada', 'Dal Wada']],
-  'maddur-wada': [ART, ['Maddur Wada', 'Maddur Vada']],
+  'maddur-wada': [PHOTO, ['Maddur Wada', 'Maddur Vada']],
   // Paddu
   'pudi-paddu': [ART, ['Pudi Paddu']],
   'ghee-paddu': [ART, ['Ghee Paddu']],
